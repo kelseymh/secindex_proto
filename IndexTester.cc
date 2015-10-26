@@ -60,8 +60,8 @@ void IndexTester::ExerciseTable(long ntrials) {
 void IndexTester::TestAndReport(unsigned long long asize, long ntrials,
 				std::ostream& csv) {
   if (asize == 0) {		// Special case: print column headings
-    csv << "Type, Size (1e6), Init uTime (s), Init sTime (s)"
-	<< ", Accesses (1e6), run uTime (s), run sTime (s)"
+    csv << "Type, Size (1e6), Init uTime (s), Init sTime (s), Init Clock (s)"
+	<< ", Accesses (1e6), Run uTime (s), Run sTime (s), Run Clock (s)"
 	<< ", Memory (MB), Page fault, Input op" << std::endl;
     return;
   }
@@ -71,8 +71,9 @@ void IndexTester::TestAndReport(unsigned long long asize, long ntrials,
       << ", " << usage.sysTime() << ", " << usage.elapsed();
 
   ExerciseTable(ntrials);
-  csv << lastTrials/1e6 << ", " << usage.userTime() << ", " << usage.sysTime()
-      << ", " << usage.elapsed() << ", " << usage.maxMemory()/1e6
-      << ", " << usage.pageFaults() << ", " << usage.ioInput()
+  csv << ", " << lastTrials/1e6 << ", " << usage.userTime() << ", "
+      << usage.sysTime() << ", " << usage.elapsed()
+      << ", " << usage.maxMemory()/1e6 << ", " << usage.pageFaults()
+      << ", " << usage.ioInput()
       << std::endl;
 }
