@@ -118,7 +118,10 @@ int MemCDIndex::value(unsigned long long index) {
 void MemCDIndex::killServer() {
   if (!mcdsv) return;		// Avoid unnecessary work
 
-  kill(mcdsv, 9);
+  // FIXME:  Expand error handling to identify what happened and why
+  if (kill(mcdsv,SIGKILL) < 0) perror("kill memcached");
+  if (waitpid(mcdsv,0,0) < 0)  perror ("waitpid memcached");
+
   mcdsv = 0;
 }
 
