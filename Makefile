@@ -12,7 +12,7 @@ SRC := simple-array.cc block-array.cc flat-file.cc memcd-index.cc \
 LIB := libindextest.a
 
 LIBSRC := UsageTimer.cc IndexTester.cc \
-	ArrayIndex.cc BlockArrays.cc FileIndex.cc MemCDIndex.cc
+	ArrayIndex.cc BlockArrays.cc MapIndex.cc FileIndex.cc MemCDIndex.cc
 
 # User targets
 

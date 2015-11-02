@@ -17,15 +17,18 @@
 //
 // array	Simple C-style array of ints
 // blocks	Set of separately allocated 1M int C-style arrays
+// stdmap	Use std::map<> as key-value index
 // file		Binary file storing ints; index is offset into file
 // memcached	Key-value pairs registered to a Memcached server
 //
 // The type may be specified by the first character, if desired.
 
 // 20151024  Michael Kelsey
+// 20151028  Add std::map<> option
 
 #include "ArrayIndex.hh"
 #include "BlockArrays.hh"
+#include "MapIndex.hh"
 #include "FileIndex.hh"
 #include "MemCDIndex.hh"
 #include <stdlib.h>
@@ -47,6 +50,7 @@ IndexTester* getTester(const string& type) {
   case 'b': return new BlockArrays; break;
   case 'f': return new FileIndex; break;
   case 'm': return new MemCDIndex; break;
+  case 's': return new MapIndex; break;
   default:
     cerr << "ERROR: unknown indexing type " << type << endl;
     return 0;
