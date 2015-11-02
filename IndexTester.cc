@@ -3,10 +3,12 @@
 // recording performance of different two-column lookup tables.
 //
 // 20151023  Michael Kelsey
+// 20151102  Add missing #includes reported by GCC 4.8.2
 
 #include "IndexTester.hh"
+#include <limits.h>
+#include <stdlib.h>
 #include <iostream>
-
 
 
 // Generate random index spanning full size of table
