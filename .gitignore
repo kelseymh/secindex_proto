@@ -7,6 +7,7 @@ flat-file
 index-performance
 memcd-index
 simple-array
+simple-xrd
 # Ignore CSV files produced by running test jobs locally
 *.csv
 # Ignore some common cruft files
