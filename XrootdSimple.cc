@@ -10,11 +10,13 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <errno.h>
 #include <signal.h>
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
+#include <string>
 using namespace std;
 
 
@@ -59,9 +61,8 @@ int XrootdSimple::value(unsigned long long index) {
   size_t ifile = index / entriesPerFile;
   size_t offset = index % entriesPerFile * sizeof(int);
 
-  string xrdUrl("localhost:1094");
-  string xrdFile(dirName+"/"+getTempFilename(ifile));
-  string xrdPath = xrdUrl+"/"+xrdFile;
+  string xrdFile = dirName+"/"+getTempFilename(ifile);
+  string xrdPath = "localhost:1094/"+xrdFile;
 
   if (verboseLevel>1) cout << "... accessing " << xrdPath << endl;
 
@@ -139,7 +140,7 @@ bool XrootdSimple::writeXrdConfigFile() {
   }
 
   confFile << "all.role server\n"
-	   << "all.manager localhost:1094\n"
+	   << "all.manager localhost:10940\n"
 	   << "all.export " << dirName << "\n"
 	   << "cms.delay startup 5\n\n"
 	   << "all.role manager\n"
