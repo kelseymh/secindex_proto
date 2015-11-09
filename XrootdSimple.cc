@@ -133,7 +133,7 @@ bool XrootdSimple::writeXrdConfigFile() {
 
   if (!createTempDir()) return false;
 
-  ofstream confFile(xrdConfigPath);
+  ofstream confFile(xrdConfigPath.c_str());
   if (!confFile) {
     cerr << "Failed to create " << xrdConfigPath << endl;
     return false;
