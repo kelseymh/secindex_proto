@@ -3,13 +3,32 @@ different models for the objectID-chunk "secondary index."  There are
 several kinds of indexes we are currently exploring:
 
 1)  A memory resident C-style array, with the objectID as the array index
-    and chunk number as value.
+    and chunk number as value.  Two versions of this are implemented, one
+    with a single large array, the other as a set of smaller block arrays,
+    each one allocated separately.
+
+    NOTE:  This implementation is incorrect.  The objectID may require a
+    full 64-bit range of values, with the estimated 40 billion objects
+    very sparsely filling that range.  The objectID cannot be used as a
+    simple array index under those conditions.
 
 2)  A flat file (on SSD for fast access), with the objectID representing
-    an offset into the file, and the chunk number stored in binary.
+    an offset into the file, and the chunk number stored in binary.  This is
+    implemented as a "large" (64-bit file size) file.
 
-3)  A client-server lookup using Memcached to store key-value pairs, with
+    NOTE:  This implementation is incorrect.  The objectID may require a
+    full 64-bit range of values, with the estimated 40 billion objects
+    very sparsely filling that range.  The objectID cannot be used as a
+    simple array index under those conditions.
+
+3)  A memory resident key-value lookup using std::map<>, with the objectID
+    as the key, and the chunk number as value.
+
+4)  A client-server lookup using Memcached to store key-value pairs, with
     both the objectID and chunk number stored as byte strings.
+
+5)  A client-server lookup using XRootD to store and access a set of flat
+    files, as in option (2).
 
 The main driver program is |index-performance|, which provides a command
 line interface to select which index model to test, and a range of sizes.
