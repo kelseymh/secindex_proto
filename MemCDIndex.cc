@@ -2,6 +2,7 @@
 // MemCDIndex.hh -- Exercise performance of memcached interface as lookup table.
 //
 // 20151023  Michael Kelsey
+// 20151104  Bug fix:  Must terminate execvp() arg list with null pointer
 
 #include "MemCDIndex.hh"
 #include <libmemcached/memcached.h>
@@ -13,7 +14,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <iostream>
-
+using namespace std;
 
 // Constructor and destructor
 
@@ -33,27 +34,28 @@ bool MemCDIndex::launchServer(unsigned long long asize) {
   long needmem = asize/1000000LL * 48 + 1;	// 48 bytes/entry, in MB
 
   mcdsv = fork();
-  if (mcdsv < 0) {
-    std::cerr << "Server creation failed!" << std::endl;
+  if (mcdsv > 0) { 
+    if (verboseLevel>1) {
+      cout << "Successfully forked child for " << needmem << " MB server"
+		<< " (PID " << mcdsv << ")" << endl;
+    }
+  } else if (mcdsv < 0) {
+    cerr << "Server creation failed!" << endl;
     return false;
   } else if (mcdsv == 0) {		// This is the child, start the server
     // Argument to "-m" is total size in megabytes
-    char* args[] = { "memcached", "-m" , 0 };
+    char* args[] = { "memcached", "-m", 0, 0 };
 
     int slen = snprintf(0,0,"%ld",needmem);	// Length of string
     args[2] = (char*)malloc(slen+1);
     snprintf(args[2],slen+1,"%ld",needmem);
 
-    if (verboseLevel>1) std::cout << "Launching server..." << std::endl;
+    if (verboseLevel>1) cout << "Launching server in child..." << endl;
     execvp(args[0], args);			// This should never return!
     ::exit(0);
-  } else {
-    if (verboseLevel>1) {
-      std::cout << "Successfully created " << needmem << " MB server"
-		<< " (PID " << mcdsv << ")" << std::endl;
-    }
-    return true;
   }
+
+  return true;
 }
 
 
@@ -62,20 +64,20 @@ bool MemCDIndex::launchServer(unsigned long long asize) {
 bool MemCDIndex::launchClient(unsigned long long asize) {
   if (memcd) killClient();
   if (!mcdsv) {
-    std::cerr << "No memcached server!" << std::endl;
+    cerr << "No memcached server!" << endl;
     return false;
   }
 
-  std::stringstream mcdstr;
+  stringstream mcdstr;
   mcdstr << "--SERVER=localhost" << " --POOL-MAX=" << asize;
   const char* mcdconf = mcdstr.str().c_str();
   memcd = memcached(mcdconf, strlen(mcdconf));
   if (!memcd) {
-    std::cerr << "Client creation failed!" << std::endl;
+    cerr << "Client creation failed!" << endl;
     return false;
   }
   
-  if (verboseLevel>1) std::cout << "Successfully created client." << std::endl;
+  if (verboseLevel>1) cout << "Successfully created client." << endl;
   return true;
 }
 
