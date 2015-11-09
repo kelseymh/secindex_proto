@@ -54,6 +54,8 @@ void XrootdSimple::create(unsigned long long asize) {
 }
 
 int XrootdSimple::value(unsigned long long index) { 
+  if (verboseLevel) cout << "XrootdSimple::value " << index << endl;
+
   size_t ifile = index / entriesPerFile;
   size_t offset = index % entriesPerFile * sizeof(int);
 
@@ -61,11 +63,15 @@ int XrootdSimple::value(unsigned long long index) {
   string xrdFile(dirName+"/"+getTempFilename(ifile));
   string xrdPath = xrdUrl+"/"+xrdFile;
 
+  if (verboseLevel>1) cout << "... accessing " << xrdPath << endl;
+
   XrdCl::File blockFile;
   if (!blockFile.Open(xrdPath,XrdCl::OpenFlags::Read).IsOK()) {
     cerr << "Unable to access " << xrdPath << endl;
     return -1;
   }
+
+  if (verboseLevel>1) cout << "... reading at offset " << offset << endl;
 
   int readValue = 0;			// Input buffer from XRD
   uint32_t readLen = 0;
@@ -73,6 +79,8 @@ int XrootdSimple::value(unsigned long long index) {
     cerr << "Unable to read " << xrdPath << " at offset " << offset << endl;
     return -1;
   }
+
+  if (verboseLevel>1) cout << "... closing file" << endl;
 
   if (!blockFile.Close().IsOK()) {
     cerr << "Unable to properly close " << xrdPath << endl;
@@ -131,11 +139,11 @@ bool XrootdSimple::writeXrdConfigFile() {
   }
 
   confFile << "all.role server\n"
-	   << "all.manager localhost\n"
+	   << "all.manager localhost:1094\n"
 	   << "all.export " << dirName << "\n"
 	   << "cms.delay startup 5\n\n"
 	   << "all.role manager\n"
-	   << "all.manager localhost\n"
+	   << "all.manager localhost:1094\n"
 	   << "all.export " << dirName << "\n"
 	   << "cms.delay startup 5\n"
 	   << endl;
@@ -180,7 +188,9 @@ pid_t XrootdSimple::launchService(const char* svcExec, const char* svcName) {
 		<< endl;
     }
 
-    execl(svcExec, svcExec, "-n", svcName, dirName.c_str(), 0);
+    string log = dirName + "/" + svcExec + "-" + svcName + ".log";
+    execl(svcExec, svcExec, "-n", svcName, "-l", log.c_str(), "-d",
+	  dirName.c_str(), 0);
     ::exit(0);
   }
 
