@@ -139,14 +139,15 @@ bool XrootdSimple::writeXrdConfigFile() {
     return false;
   }
 
-  confFile << "all.role server\n"
+  confFile << "if named manager\n"
+	   << "all.role manager\n"
+	   << "else\n"
+	   << "all.role server\n"
+	   << "xrd.port 1094\n"
+	   << "fi\n"
 	   << "all.manager localhost:10940\n"
 	   << "all.export " << dirName << "\n"
-	   << "cms.delay startup 5\n\n"
-	   << "all.role manager\n"
-	   << "all.manager localhost:1094\n"
-	   << "all.export " << dirName << "\n"
-	   << "cms.delay startup 5\n"
+	   << "cms.delay startup 5"
 	   << endl;
 
   return true;
@@ -155,8 +156,9 @@ bool XrootdSimple::writeXrdConfigFile() {
 bool XrootdSimple::launchServer() {
   if (verboseLevel) cout << "XrootdSimple::launchServer" << endl;
 
-  xrdServerPid = launchService("xrootd", "server");
   cmsdServerPid = launchService("cmsd", "server");
+  sleep(2);
+  xrdServerPid = launchService("xrootd", "server");
   sleep(10);
 
   return (xrdServerPid > 0 && cmsdServerPid > 0);
@@ -165,8 +167,9 @@ bool XrootdSimple::launchServer() {
 bool XrootdSimple::launchManager() {
   if (verboseLevel) cout << "XrootdSimple::launchManager" << endl;
 
-  xrdManagerPid = launchService("xrootd", "manager");
   cmsdManagerPid = launchService("cmsd", "manager");
+  sleep(2);
+  xrdManagerPid = launchService("xrootd", "manager");
   sleep(10);
 
   return (xrdManagerPid > 0 && cmsdManagerPid > 0);
@@ -189,9 +192,17 @@ pid_t XrootdSimple::launchService(const char* svcExec, const char* svcName) {
 		<< endl;
     }
 
+    string cfn = dirName + "/" + xrdConfigName;
     string log = dirName + "/" + svcExec + "-" + svcName + ".log";
-    execl(svcExec, svcExec, "-n", svcName, "-l", log.c_str(), "-d",
-	  dirName.c_str(), 0);
+
+    if (verboseLevel>1) {
+      cout << svcExec << " -n " << svcName << " -c " << cfn.c_str()
+	   << " -I v4 -l " << log.c_str() << " -d " << dirName.c_str()
+	   << endl;
+    }
+
+    execl(svcExec, svcExec, "-n", svcName, "-c", cfn.c_str(), "-I", "v4", 
+	  "-l", log.c_str(), "-d", dirName.c_str(), 0);
     ::exit(0);
   }
 
