@@ -4,43 +4,49 @@
 #
 # 20151026  Michael Kelsey
 # 20151103  Use $(pkg-config) to test for Memcached support
+# 20151106  Add XRootD support
+# 20151110  Reduce number of intermediate files by using lib(obj) dependences
 
 # Source and header files
 
-SRC := index-performance.cc simple-array.cc block-array.cc flat-file.cc	
-
-LIB := libindextest.a
-
 LIBSRC := UsageTimer.cc IndexTester.cc ArrayIndex.cc BlockArrays.cc \
 	MapIndex.cc FileIndex.cc
+BINSRC := index-performance.cc simple-array.cc block-array.cc flat-file.cc	
 
 # Check local platform for Memcached API library
 
 HASMEMCACHED := $(shell pkg-config --modversion --silence-errors libmemcached)
 ifneq (,$(HASMEMCACHED))
-  SRC += memcd-index.cc
+  BINSRC += memcd-index.cc
   LIBSRC += MemCDIndex.cc
 endif
 
 # Check local platform for XRootD
 
 ifneq (,$(XROOTD_DIR))
-  SRC +=  simple-xrd.cc
+  BINSRC +=  simple-xrd.cc query-xrd.cc
   LIBSRC += XrootdSimple.cc
 endif
+
+# Derivatives of source files 
+
+LIB := libindextest.a
+LIBO := $(LIBSRC:.cc=.o)
+
+BIN := $(BINSRC:.cc=)
 
 # User targets
 
 all : lib bin
 
-bin : $(SRC:.cc=)
+bin : $(BIN)
 lib : $(LIB)
 
 clean :
-	/bin/rm -f $(SRC:.cc=.o) $(LIBSRC:.cc=.o) *~
+	/bin/rm -f $(LIBO) *~
 
 veryclean : clean
-	/bin/rm -f $(SRC:.cc=) $(LIB)
+	/bin/rm -f $(BIN) $(LIB)
 
 # Incorporate /usr/local in building
 
@@ -74,10 +80,9 @@ ArrayIndex.cc BlockArrays.cc \
 MapIndex.cc FileIndex.cc \
 MemCDIndex.cc XrootdSimple.cc : IndexTester.hh
 
-$(SRC) : IndexTester.hh UsageTimer.hh
+$(BINSRC) : IndexTester.hh UsageTimer.hh
 $(LIBSRC) : %.cc:%.hh
 
-$(SRC:.cc=) : $(LIB)
+$(BIN) : $(LIB)
 
-$(LIB) : $(LIBSRC:.cc=.o)
-	$(AR) -r $@ $^
+$(LIB) : $(patsubst %,$(LIB)(%),$(LIBO))
