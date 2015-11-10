@@ -8,6 +8,7 @@ index-performance
 memcd-index
 simple-array
 simple-xrd
+query-xrd
 # Ignore CSV files produced by running test jobs locally
 *.csv
 # Ignore some common cruft files
