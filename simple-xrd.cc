@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
   int queryTrials;
   arrayArgs(argc, argv, arraySize, queryTrials);
 
-  std::cout << "Memcached Table " << arraySize << " elements, " << queryTrials
+  std::cout << "XRootD Table " << arraySize << " elements, " << queryTrials
 	    << " trials" << std::endl;
 
   XrootdSimple xrdidx(2);		// Verbosity
