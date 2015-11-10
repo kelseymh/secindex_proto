@@ -20,17 +20,24 @@
 // stdmap	Use std::map<> as key-value index
 // file		Binary file storing ints; index is offset into file
 // memcached	Key-value pairs registered to a Memcached server
+// xrootd	Binary files storing ints, accessed via XRootD
 //
 // The type may be specified by the first character, if desired.
 
 // 20151024  Michael Kelsey
 // 20151028  Add std::map<> option
+// 20151110  Add XRootD option, use preprocessor macros for Memcached, XRootD
 
 #include "ArrayIndex.hh"
 #include "BlockArrays.hh"
 #include "MapIndex.hh"
 #include "FileIndex.hh"
+#ifdef HAS_MEMCACHED
 #include "MemCDIndex.hh"
+#endif
+#ifdef HAS_XROOTD
+#include "XrootdSimple.hh"
+#endif
 #include <stdlib.h>
 #include <cmath>
 #include <iostream>
@@ -49,8 +56,13 @@ IndexTester* getTester(const string& type) {
   case 'a': return new ArrayIndex; break;
   case 'b': return new BlockArrays; break;
   case 'f': return new FileIndex; break;
-  case 'm': return new MemCDIndex; break;
   case 's': return new MapIndex; break;
+#ifdef HAS_MEMCACHED
+  case 'm': return new MemCDIndex; break;
+#endif
+#ifdef HAS_XROOTD
+  case 'x': return new XrootdSimple; break;
+#endif
   default:
     cerr << "ERROR: unknown indexing type " << type << endl;
     return 0;

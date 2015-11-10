@@ -54,13 +54,13 @@ LDFLAGS += -L.
 LDLIBS  += -lindextest
 
 ifneq (,$(HASMEMCACHED))
-  CPPFLAGS += -I/usr/local/include
+  CPPFLAGS += -I/usr/local/include -DHAS_MEMCACHED=1
   LDFLAGS  += -L/usr/local/lib
   LDLIBS   += -lmemcached
 endif
 
 ifneq (,$(XROOTD_DIR))
-  CPPFLAGS += -I$(XROOTD_DIR)/include/xrootd
+  CPPFLAGS += -I$(XROOTD_DIR)/include/xrootd -DHAS_XROOTD=1
   LDFLAGS += -L$(XROOTD_DIR)/lib
   LDLIBS += -lXrdCl
 endif
