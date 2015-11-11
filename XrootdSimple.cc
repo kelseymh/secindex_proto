@@ -182,31 +182,40 @@ pid_t XrootdSimple::launchService(const char* svcExec, const char* svcName) {
   pid_t svcPid = fork();
   if (svcPid > 0) {
     cout << "Successfully forked child " << svcExec << " [" << svcName << "]"
-	      << " (PID " << svcPid << ")" << endl;
+	 << " (PID " << svcPid << ")" << endl;
+    return svcPid;
   } else if (svcPid < 0) {
     cerr << "Service creation ("  << svcExec << " [" << svcName
-	      << "] failed!" << endl;
-  } else if (svcPid == 0) {		// This is the child, start the service
-    if (verboseLevel>1) {
-      cout << "Child launching " << svcExec << " [" << svcName << "] ..."
-		<< endl;
-    }
+	 << "] failed!" << endl;
+    return svcPid;
+  }
+  
+  // This is the child
+  string cfn = dirName + "/" + xrdConfigName;
+  string log = dirName + "/" + svcExec + "-" + svcName + ".log";
+  
+  // Only local data (no std::string::c_str()!) can go to execlp
+  char* cfnStr = new char[cfn.length()+1];	// Pseudo memory leak
+  std::strcpy(cfnStr, cfn.c_str());
+  
+  char* logStr = new char[log.length()+1];	// Pseudo memory leak
+  std::strcpy(logStr, log.c_str());
+  
+  char* dirStr = new char[dirName.length()+1];	// Pseudo memory leak
+  std::strcpy(dirStr, dirName.c_str());
 
-    string cfn = dirName + "/" + xrdConfigName;
-    string log = dirName + "/" + svcExec + "-" + svcName + ".log";
-
-    if (verboseLevel>1) {
-      cout << svcExec << " -n " << svcName << " -c " << cfn.c_str()
-	   << " -I v4 -l " << log.c_str() << " -d " << dirName.c_str()
-	   << endl;
-    }
-
-    execl(svcExec, svcExec, "-n", svcName, "-c", cfn.c_str(), "-I", "v4", 
-	  "-l", log.c_str(), "-d", dirName.c_str(), 0);
-    ::exit(0);
+  if (verboseLevel>1) {
+    cout << svcExec << " -n " << svcName << " -c " << cfnStr
+	 << " -l " << logStr << " -d " << dirStr
+	 << endl;
   }
 
-  return svcPid;
+  execlp(svcExec, svcExec, "-n", svcName, "-c", cfnStr,
+	 "-l", logStr, "-d", dirStr, 0);
+      
+  cerr << "FATAL ERROR!  execlp returned to child!" << endl;
+  perror("execlp");
+  return -1;
 }
 
 
