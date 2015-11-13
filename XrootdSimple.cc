@@ -141,11 +141,13 @@ bool XrootdSimple::writeXrdConfigFile() {
 
   confFile << "if named manager\n"
 	   << "all.role manager\n"
+	   << "xrd.port 10940\n"
 	   << "else\n"
 	   << "all.role server\n"
 	   << "xrd.port 1094\n"
 	   << "fi\n"
 	   << "all.manager localhost:10940\n"
+           << "all.server localhost:1094\n"
 	   << "all.export " << dirName << "\n"
 	   << "cms.delay startup 5"
 	   << endl;
@@ -156,9 +158,9 @@ bool XrootdSimple::writeXrdConfigFile() {
 bool XrootdSimple::launchServer() {
   if (verboseLevel) cout << "XrootdSimple::launchServer" << endl;
 
-  cmsdServerPid = launchService("cmsd", "server");
-  sleep(2);
   xrdServerPid = launchService("xrootd", "server");
+  sleep(2);
+  cmsdServerPid = launchService("cmsd", "server");
   sleep(10);
 
   return (xrdServerPid > 0 && cmsdServerPid > 0);
@@ -167,53 +169,43 @@ bool XrootdSimple::launchServer() {
 bool XrootdSimple::launchManager() {
   if (verboseLevel) cout << "XrootdSimple::launchManager" << endl;
 
-  cmsdManagerPid = launchService("cmsd", "manager");
-  sleep(2);
   xrdManagerPid = launchService("xrootd", "manager");
+  sleep(2);
+  cmsdManagerPid = launchService("cmsd", "manager");
   sleep(10);
 
   return (xrdManagerPid > 0 && cmsdManagerPid > 0);
 }
 
 pid_t XrootdSimple::launchService(const char* svcExec, const char* svcName) {
-  if (verboseLevel>1) 
+  if (verboseLevel) 
     cout << "XrootdSimple::launchService " << svcExec << " " << svcName << endl;
 
   pid_t svcPid = fork();
   if (svcPid > 0) {
-    cout << "Successfully forked child " << svcExec << " [" << svcName << "]"
-	 << " (PID " << svcPid << ")" << endl;
+    if (verboseLevel>1) {
+      cout << "Successfully forked child " << svcExec << " [" << svcName << "]"
+	   << " (PID " << svcPid << ")" << endl;
+    }
     return svcPid;
   } else if (svcPid < 0) {
-    cerr << "Service creation ("  << svcExec << " [" << svcName
-	 << "] failed!" << endl;
+    cerr << "fork ("  << svcExec << " [" << svcName << "] failed!" << endl;
     return svcPid;
   }
   
-  // This is the child
   string cfn = dirName + "/" + xrdConfigName;
   string log = dirName + "/" + svcExec + "-" + svcName + ".log";
-  
-  // Only local data (no std::string::c_str()!) can go to execlp
-  char* cfnStr = new char[cfn.length()+1];	// Pseudo memory leak
-  std::strcpy(cfnStr, cfn.c_str());
-  
-  char* logStr = new char[log.length()+1];	// Pseudo memory leak
-  std::strcpy(logStr, log.c_str());
-  
-  char* dirStr = new char[dirName.length()+1];	// Pseudo memory leak
-  std::strcpy(dirStr, dirName.c_str());
 
   if (verboseLevel>1) {
-    cout << svcExec << " -n " << svcName << " -c " << cfnStr
-	 << " -l " << logStr << " -d " << dirStr
+    cout << svcExec << " -n " << svcName << " -c " << cfn
+	 << " -l " << log << " -d " << dirName
 	 << endl;
   }
 
-  execlp(svcExec, svcExec, "-n", svcName, "-c", cfnStr,
-	 "-l", logStr, "-d", dirStr, 0);
+  execlp(svcExec, svcExec, "-n", svcName, "-c", cfn.c_str(),
+	 "-l", log.c_str(), "-d", dirName.c_str(), (const char*)0);
       
-  cerr << "FATAL ERROR!  execlp returned to child!" << endl;
+  cerr << "FATAL ERROR in XrootdSimple: ";
   perror("execlp");
   return -1;
 }
