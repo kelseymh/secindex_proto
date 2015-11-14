@@ -5,6 +5,7 @@
 //		      as blocked lookup tables.
 //
 // 20151103  Michael Kelsey
+// 20151113  Add buffer for local hostname, used in configuring XRootD
 
 #include "IndexTester.hh"
 #include <sys/types.h>
@@ -38,6 +39,7 @@ protected:
 
 private:
   size_t entriesPerFile;	// Number of index entries per flat file
+  std::string localHostName;	// Name of host, to pass to XRootD services
   std::string dirName;		// Directory path to hold flat files
   std::string xrdConfigName;	// Configuration file for XRootD services
 

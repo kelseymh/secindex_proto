@@ -3,6 +3,8 @@
 //		      as blocked lookup tables, 100M entries per file.
 //
 // 20151103  Michael Kelsey
+// 20151113  Fix server configs per Andy H., move all temp files into data dir
+// 20151113  Instead of "localhost", use call to gethostname() to get string
 
 #include "XrootdSimple.hh"
 #include "XrdCl/XrdClFile.hh"
@@ -25,7 +27,12 @@ using namespace std;
 XrootdSimple::XrootdSimple(int verbose)
   : IndexTester("xrootd", verbose), entriesPerFile(10000000),
     dirName("/tmp/xrootd_simple"), xrdConfigName("xrootd.conf"),
-    xrdServerPid(0), cmsdServerPid(0), xrdManagerPid(0), cmsdManagerPid(0) {;}
+    xrdServerPid(0), cmsdServerPid(0), xrdManagerPid(0), cmsdManagerPid(0) {
+  const size_t namelen = sysconf(_SC_HOST_NAME_MAX)+1;
+  char hostname[namelen];
+  gethostname(hostname, namelen);
+  localHostName = hostname;
+}
 
 XrootdSimple::~XrootdSimple() {
   killServer();
@@ -53,6 +60,8 @@ void XrootdSimple::create(unsigned long long asize) {
     cerr << "Unable to launch XRootD services!" << endl;
     ::exit(1);
   }
+
+  sleep(10);		// Wait for services to be ready for access
 }
 
 int XrootdSimple::value(unsigned long long index) { 
@@ -62,7 +71,7 @@ int XrootdSimple::value(unsigned long long index) {
   size_t offset = index % entriesPerFile * sizeof(int);
 
   string xrdFile = dirName+"/"+getTempFilename(ifile);
-  string xrdPath = "localhost:1094/"+xrdFile;
+  string xrdPath = localHostName+":10940/"+xrdFile;
 
   if (verboseLevel>1) cout << "... accessing " << xrdPath << endl;
 
@@ -141,13 +150,14 @@ bool XrootdSimple::writeXrdConfigFile() {
 
   confFile << "if named manager\n"
 	   << "all.role manager\n"
-	   << "xrd.port 10940\n"
+	   << "xrd.port 10940 if exec xrootd\n"
 	   << "else\n"
 	   << "all.role server\n"
-	   << "xrd.port 1094\n"
+	   << "xrd.port any\n"
 	   << "fi\n"
-	   << "all.manager localhost:10940\n"
-           << "all.server localhost:1094\n"
+	   << "all.manager " << localHostName << ":10950\n"
+	   << "all.adminpath " << dirName << "\n"
+	   << "all.pidpath " << dirName << "\n"
 	   << "all.export " << dirName << "\n"
 	   << "cms.delay startup 5"
 	   << endl;
@@ -158,10 +168,8 @@ bool XrootdSimple::writeXrdConfigFile() {
 bool XrootdSimple::launchServer() {
   if (verboseLevel) cout << "XrootdSimple::launchServer" << endl;
 
-  xrdServerPid = launchService("xrootd", "server");
-  sleep(2);
   cmsdServerPid = launchService("cmsd", "server");
-  sleep(10);
+  xrdServerPid = launchService("xrootd", "server");
 
   return (xrdServerPid > 0 && cmsdServerPid > 0);
 }
@@ -169,10 +177,8 @@ bool XrootdSimple::launchServer() {
 bool XrootdSimple::launchManager() {
   if (verboseLevel) cout << "XrootdSimple::launchManager" << endl;
 
-  xrdManagerPid = launchService("xrootd", "manager");
-  sleep(2);
   cmsdManagerPid = launchService("cmsd", "manager");
-  sleep(10);
+  xrdManagerPid = launchService("xrootd", "manager");
 
   return (xrdManagerPid > 0 && cmsdManagerPid > 0);
 }
@@ -195,15 +201,17 @@ pid_t XrootdSimple::launchService(const char* svcExec, const char* svcName) {
   
   string cfn = dirName + "/" + xrdConfigName;
   string log = dirName + "/" + svcExec + "-" + svcName + ".log";
+  string env = dirName + "/" + svcExec + "." + svcName + ".env";
 
   if (verboseLevel>1) {
     cout << svcExec << " -n " << svcName << " -c " << cfn
-	 << " -l " << log << " -d " << dirName
+	 << " -l " << log << " -d " << " -s " << env
 	 << endl;
   }
 
+  // Config file, log files, and internal files all go to data directory
   execlp(svcExec, svcExec, "-n", svcName, "-c", cfn.c_str(),
-	 "-l", log.c_str(), "-d", dirName.c_str(), (const char*)0);
+	 "-l", log.c_str(), "-d", "-s", env.c_str(), (const char*)0);
       
   cerr << "FATAL ERROR in XrootdSimple: ";
   perror("execlp");
