@@ -40,6 +40,7 @@
 #endif
 #include <stdlib.h>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <string>
 using namespace std;
@@ -101,18 +102,23 @@ int main(int argc, char* argv[]) {
   IndexTester* tester = getTester(type);
   if (!tester) ::exit(2);
 
+  string csvName = tester->GetName();
+  csvName += ".csv";
+
   // Set up comma-separated data
-  tester->TestAndReport(0, 0, cout);
+  std::ofstream csv(csvName.c_str());
+  tester->TestAndReport(0, 0, csv);
 
   // Loop over table sizes logarithmically (1, 3, 10, 30, etc.)
   ULL testsize = minsize;
   while (testsize <= maxsize) {
-    tester->TestAndReport(testsize, trials, cout);
+    tester->TestAndReport(testsize, trials, csv);
     if (testsize == maxsize) break;			// Final test exits
 
     testsize = min(NextSizeStep(testsize), maxsize);	// Don't exceed user max
   }
 
-  // Job finished, clean up and exist
+  // Job finished, clean up and exit
+  csv.close();
   delete tester;
 }

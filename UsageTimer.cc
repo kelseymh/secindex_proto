@@ -3,10 +3,10 @@
 // a program.
 //
 // 20151026  Michael Kelsey
+// 20151114  Replace clock_t with time_t to get wall-clock duration
 
 #include "UsageTimer.hh"
 #include <stdio.h>
-#include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <iostream>
@@ -14,28 +14,30 @@
 
 // Static buffer to initialize timers for incremental work
 
+const struct timeval UsageTimer::tZero = {0,0};
 const struct rusage UsageTimer::uZero =
-  { {0,0},{0,0},0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+  { tZero,tZero,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 
 
 // Implentation of usage functions
 
 void UsageTimer::zero() {		// Reset total count
   uTotal = uZero;
-  tTotal = 0;
+  tTotal = tZero;
 }
 
 void UsageTimer::start() {		// Begin recording
-  tStart = clock();
+  gettimeofday(&tStart, NULL);
   getrusage(RUSAGE_SELF, &uStart);
 }
 
 void UsageTimer::end() {		// Finish recording
-  tEnd = clock();
+  gettimeofday(&tEnd, NULL);
   getrusage(RUSAGE_SELF, &uEnd);
   uTotal += uEnd;
   uTotal -= uStart;
-  tTotal += tEnd - tStart;
+  tTotal += tEnd;
+  tTotal -= tStart;
 }
 
 
@@ -47,7 +49,7 @@ void UsageTimer::report(std::ostream& os) const {
   char tbuf[80];
   snprintf(tbuf, sizeof(tbuf),
 	   "%5.3fu %5.3fs %d:%05.2f %3.1f%%\t%ld+%ldk %ld+%ldio %ldpf+%ldw",
-	   userTime(), sysTime(), (int)(ttime/60.), ttime-60*(int)(ttime/60.),
+	   userTime(), sysTime(), int(ttime/60.), ttime-60.*int(ttime/60.),
 	   100.*cpuEff(), (long)memoryText(),(long)(memoryData()+memoryStack()),
 	   ioInput(), ioOutput(), pageFaults(), swaps());
 

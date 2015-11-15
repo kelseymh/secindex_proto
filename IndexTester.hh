@@ -5,6 +5,7 @@
 // recording performance of different two-column lookup tables.
 //
 // 20151023  Michael Kelsey
+// 20151113  Add accessors for verbosity and name
 
 #include "UsageTimer.hh"
 #include <iosfwd>
@@ -16,6 +17,8 @@ public:
   virtual ~IndexTester() {;}
 
   void SetVerboseLevel(int verbose) { verboseLevel = verbose; }
+  int GetVerboseLevel() const { return verboseLevel; }
+  const char* GetName() const { return tableName; }
 
   // Generate test and print comma-separated data; asize=0 for column headings
   void TestAndReport(unsigned long long asize, long ntrials, std::ostream& csv);

@@ -6,6 +6,7 @@
 //
 // 20151023  Michael Kelsey
 // 20151026  Add access to memory usage (multiply by ticks)
+// 20151114  Replace clock_t with timeval to get wall-clock duration
 
 #include <time.h>
 #include <sys/time.h>
@@ -38,29 +39,32 @@ public:
   void end();			// Finish recording
   void report(std::ostream& os) const; 		// Print results, like |time|
 
+  double elapsed() const { return tTotal.tv_sec+tTotal.tv_usec/1e6; }
   double userTime() const { return uTotal.ru_utime.tv_sec+uTotal.ru_utime.tv_usec/1e6; }
   double sysTime() const { return uTotal.ru_stime.tv_sec+uTotal.ru_stime.tv_usec/1e6; }
-  double elapsed() const { return (double)tTotal/CLOCKS_PER_SEC; }
-  double cpuEff() const { return (userTime()+sysTime())/elapsed(); }
+  double cpuTime() const { return userTime()+sysTime(); }
+  double cpuEff() const { return cpuTime()/elapsed(); }
   long maxMemory() const { return uTotal.ru_maxrss; }
-  double memoryText() const { return (double)uTotal.ru_ixrss/tTotal; }
-  double memoryData() const { return (double)uTotal.ru_idrss/tTotal; }
-  double memoryStack() const { return (double)uTotal.ru_isrss/tTotal; }
+  double memoryText() const { return (double)uTotal.ru_ixrss/elapsed(); }
+  double memoryData() const { return (double)uTotal.ru_idrss/elapsed(); }
+  double memoryStack() const { return (double)uTotal.ru_isrss/elapsed(); }
   long pageFaults() const { return uTotal.ru_majflt; }
   long swaps() const { return uTotal.ru_nswap; }
   long ioInput() const { return uTotal.ru_inblock; }
   long ioOutput() const { return uTotal.ru_oublock; }
 
 private:
-  struct rusage uStart;	// Collects usage information for report
+  struct rusage uStart;		// Collects usage information for report
   struct rusage uEnd;
   struct rusage uTotal;
 
-  clock_t tStart;		// Collects simple elapsed time, for report
-  clock_t tEnd;
-  clock_t tTotal;
+  struct timeval tStart;	// Collects simple elapsed time, for report
+  struct timeval tEnd;
+  struct timeval tTotal;
 
   static const struct rusage uZero;
+  static const struct timeval tZero;
+
 };
 
 

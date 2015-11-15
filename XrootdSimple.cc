@@ -65,7 +65,7 @@ void XrootdSimple::create(unsigned long long asize) {
 }
 
 int XrootdSimple::value(unsigned long long index) { 
-  if (verboseLevel) cout << "XrootdSimple::value " << index << endl;
+  if (verboseLevel>1) cout << "XrootdSimple::value " << index << endl;
 
   size_t ifile = index / entriesPerFile;
   size_t offset = index % entriesPerFile * sizeof(int);
@@ -73,7 +73,7 @@ int XrootdSimple::value(unsigned long long index) {
   string xrdFile = dirName+"/"+getTempFilename(ifile);
   string xrdPath = localHostName+":10940/"+xrdFile;
 
-  if (verboseLevel>1) cout << "... accessing " << xrdPath << endl;
+  if (verboseLevel>2) cout << "... accessing " << xrdPath << endl;
 
   XrdCl::File blockFile;
   if (!blockFile.Open(xrdPath,XrdCl::OpenFlags::Read).IsOK()) {
@@ -81,7 +81,7 @@ int XrootdSimple::value(unsigned long long index) {
     return -1;
   }
 
-  if (verboseLevel>1) cout << "... reading at offset " << offset << endl;
+  if (verboseLevel>2) cout << "... reading at offset " << offset << endl;
 
   int readValue = 0;			// Input buffer from XRD
   uint32_t readLen = 0;
@@ -90,7 +90,7 @@ int XrootdSimple::value(unsigned long long index) {
     return -1;
   }
 
-  if (verboseLevel>1) cout << "... closing file" << endl;
+  if (verboseLevel>2) cout << "... closing file" << endl;
 
   if (!blockFile.Close().IsOK()) {
     cerr << "Unable to properly close " << xrdPath << endl;
@@ -103,7 +103,7 @@ int XrootdSimple::value(unsigned long long index) {
 // Create flat files locally (before XRootD starts) for lookup tables
 
 bool XrootdSimple::createTempFiles(size_t nfiles) {
-  if (verboseLevel) {
+  if (verboseLevel>1) {
     cout << "XrootdSimple::createTempFiles " << nfiles << " in " << dirName
 	 << endl;
   }
@@ -137,7 +137,7 @@ bool XrootdSimple::createTempFile(size_t ifile) {
 bool XrootdSimple::writeXrdConfigFile() {
   string xrdConfigPath = dirName+"/"+xrdConfigName;
 
-  if (verboseLevel)
+  if (verboseLevel>1)
     cout << "XrootdSimple::writeXrdConfigFile " << xrdConfigPath << endl;
 
   if (!createTempDir()) return false;
@@ -166,7 +166,7 @@ bool XrootdSimple::writeXrdConfigFile() {
 }
 
 bool XrootdSimple::launchServer() {
-  if (verboseLevel) cout << "XrootdSimple::launchServer" << endl;
+  if (verboseLevel>1) cout << "XrootdSimple::launchServer" << endl;
 
   cmsdServerPid = launchService("cmsd", "server");
   xrdServerPid = launchService("xrootd", "server");
@@ -175,7 +175,7 @@ bool XrootdSimple::launchServer() {
 }
 
 bool XrootdSimple::launchManager() {
-  if (verboseLevel) cout << "XrootdSimple::launchManager" << endl;
+  if (verboseLevel>1) cout << "XrootdSimple::launchManager" << endl;
 
   cmsdManagerPid = launchService("cmsd", "manager");
   xrdManagerPid = launchService("xrootd", "manager");
@@ -184,12 +184,12 @@ bool XrootdSimple::launchManager() {
 }
 
 pid_t XrootdSimple::launchService(const char* svcExec, const char* svcName) {
-  if (verboseLevel) 
+  if (verboseLevel>1) 
     cout << "XrootdSimple::launchService " << svcExec << " " << svcName << endl;
 
   pid_t svcPid = fork();
   if (svcPid > 0) {
-    if (verboseLevel>1) {
+    if (verboseLevel>2) {
       cout << "Successfully forked child " << svcExec << " [" << svcName << "]"
 	   << " (PID " << svcPid << ")" << endl;
     }
@@ -203,7 +203,7 @@ pid_t XrootdSimple::launchService(const char* svcExec, const char* svcName) {
   string log = dirName + "/" + svcExec + "-" + svcName + ".log";
   string env = dirName + "/" + svcExec + "." + svcName + ".env";
 
-  if (verboseLevel>1) {
+  if (verboseLevel>2) {
     cout << svcExec << " -n " << svcName << " -c " << cfn
 	 << " -l " << log << " -d " << " -s " << env
 	 << endl;

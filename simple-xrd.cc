@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
   std::cout << "XRootD Table " << arraySize << " elements, " << queryTrials
 	    << " trials" << std::endl;
 
-  XrootdSimple xrdidx(2);		// Verbosity
+  XrootdSimple xrdidx(1);		// Verbosity
   xrdidx.CreateTable(arraySize);
   xrdidx.ExerciseTable(queryTrials);
 }
