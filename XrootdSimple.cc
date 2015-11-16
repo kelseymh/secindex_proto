@@ -168,6 +168,8 @@ bool XrootdSimple::writeXrdConfigFile() {
 bool XrootdSimple::launchServer() {
   if (verboseLevel>1) cout << "XrootdSimple::launchServer" << endl;
 
+  if (cmsdServerPid>0 || xrdServerPid>0) killServer();
+
   cmsdServerPid = launchService("cmsd", "server");
   xrdServerPid = launchService("xrootd", "server");
 
@@ -176,6 +178,8 @@ bool XrootdSimple::launchServer() {
 
 bool XrootdSimple::launchManager() {
   if (verboseLevel>1) cout << "XrootdSimple::launchManager" << endl;
+
+  if (cmsdManagerPid>0 || xrdManagerPid>0) killManager();
 
   cmsdManagerPid = launchService("cmsd", "manager");
   xrdManagerPid = launchService("xrootd", "manager");
