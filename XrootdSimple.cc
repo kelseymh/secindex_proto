@@ -5,6 +5,7 @@
 // 20151103  Michael Kelsey
 // 20151113  Fix server configs per Andy H., move all temp files into data dir
 // 20151113  Instead of "localhost", use call to gethostname() to get string
+// 20151116  Remove debugging option from XRootD services.
 
 #include "XrootdSimple.hh"
 #include "XrdCl/XrdClFile.hh"
@@ -209,13 +210,13 @@ pid_t XrootdSimple::launchService(const char* svcExec, const char* svcName) {
 
   if (verboseLevel>2) {
     cout << svcExec << " -n " << svcName << " -c " << cfn
-	 << " -l " << log << " -d " << " -s " << env
+	 << " -l " << log << " -s " << env
 	 << endl;
   }
 
   // Config file, log files, and internal files all go to data directory
   execlp(svcExec, svcExec, "-n", svcName, "-c", cfn.c_str(),
-	 "-l", log.c_str(), "-d", "-s", env.c_str(), (const char*)0);
+	 "-l", log.c_str(), "-s", env.c_str(), (const char*)0);
       
   cerr << "FATAL ERROR in XrootdSimple: ";
   perror("execlp");
