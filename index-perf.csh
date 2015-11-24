@@ -5,10 +5,11 @@
 #
 # 20151025  Michael Kelsey
 # 20151113  Add XRootD, drop redirection (handled using job name)
+# 20151123  Update test ranges to reflect latest performance results
 
 ./index-performance array     100000000  15000000000
 ./index-performance blocks    100000000  15000000000
-./index-performance stdmap    100000000    300000000
+./index-performance stdmap     10000000    300000000
 ./index-performance file      100000000 100000000000
-./index-performance memcached 100000000  50000000000
-./index-performance xrootd     10000000    100000000
+./index-performance memcached  10000000    150000000
+./index-performance xrootd     10000000  10000000000
