@@ -6,6 +6,7 @@
 # 20151103  Use $(pkg-config) to test for Memcached support
 # 20151106  Add XRootD support
 # 20151110  Reduce number of intermediate files by using lib(obj) dependences
+# 20151124  Add RocksDB support, need to require C++11
 
 # Source and header files
 
@@ -26,6 +27,14 @@ endif
 ifneq (,$(XROOTD_DIR))
   BINSRC +=  simple-xrd.cc query-xrd.cc
   LIBSRC += XrootdSimple.cc
+endif
+
+# Check local platform for RocksDB (NOTE: Not registered with pkg-config)
+
+HASROCKSDB := $(shell ls -d /usr/local/include/rocksdb 2> /dev/null)
+ifneq  (,$(HASROCKSDB))
+  BINSRC += rocksdb-index.cc
+  LIBSRC += RocksIndex.cc
 endif
 
 # Derivatives of source files 
@@ -50,12 +59,13 @@ veryclean : clean
 
 # Incorporate /usr/local in building
 
-LDFLAGS += -L.
+CXXFLAGS += -std=c++11
+CPPFLAGS += -I/usr/local/include
+LDFLAGS += -L. -L/usr/local/lib
 LDLIBS  += -lindextest
 
 ifneq (,$(HASMEMCACHED))
-  CPPFLAGS += -I/usr/local/include -DHAS_MEMCACHED=1
-  LDFLAGS  += -L/usr/local/lib
+  CPPFLAGS += -DHAS_MEMCACHED=1
   LDLIBS   += -lmemcached
 endif
 
@@ -65,20 +75,26 @@ ifneq (,$(XROOTD_DIR))
   LDLIBS += -lXrdCl
 endif
 
+ifneq (,$(HASROCKSDB))
+  CPPFLAGS += -DHAS_ROCKSDB=1
+  LDLIBS += -lrocksdb
+endif
+
 # Dependencies
 
-simple-array.cc index-performance.cc : ArrayIndex.hh
-block-array.cc index-performance.cc  : BlockArrays.hh
-flat-file.cc index-performance.cc    : FileIndex.hh
-memcd-index.cc index-performance.cc  : MemCDIndex.hh
-simple-xrd.cc index-performance.cc   : XrootdSimple.hh
-index-performance.cc                 : MapIndex.hh
+simple-array.cc index-performance.cc  : ArrayIndex.hh
+block-array.cc index-performance.cc   : BlockArrays.hh
+flat-file.cc index-performance.cc     : FileIndex.hh
+memcd-index.cc index-performance.cc   : MemCDIndex.hh
+simple-xrd.cc index-performance.cc    : XrootdSimple.hh
+rocksdb-index.cc index-performance.cc : RocksIndex.hh
+index-performance.cc                  : MapIndex.hh
 
 IndexTester.hh : UsageTimer.hh
 
 ArrayIndex.cc BlockArrays.cc \
 MapIndex.cc FileIndex.cc \
-MemCDIndex.cc XrootdSimple.cc : IndexTester.hh
+MemCDIndex.cc XrootdSimple.cc RocksIndex.cc : IndexTester.hh
 
 $(BINSRC) : IndexTester.hh UsageTimer.hh
 $(LIBSRC) : %.cc:%.hh

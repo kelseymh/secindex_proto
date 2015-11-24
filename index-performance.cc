@@ -21,12 +21,14 @@
 // file		Binary file storing ints; index is offset into file
 // memcached	Key-value pairs registered to a Memcached server
 // xrootd	Binary files storing ints, accessed via XRootD
+// rocksdb	Key-value pairs registered to a RocksDB instance
 //
 // The type may be specified by the first character, if desired.
 
 // 20151024  Michael Kelsey
 // 20151028  Add std::map<> option
 // 20151110  Add XRootD option, use preprocessor macros for Memcached, XRootD
+// 20151125  Add RocksDB option, use preprocessor macro
 
 #include "ArrayIndex.hh"
 #include "BlockArrays.hh"
@@ -37,6 +39,9 @@
 #endif
 #ifdef HAS_XROOTD
 #include "XrootdSimple.hh"
+#endif
+#ifdef HAS_ROCKSDB
+#include "RocksIndex.hh"
 #endif
 #include <stdlib.h>
 #include <cmath>
@@ -63,6 +68,9 @@ IndexTester* getTester(const string& type) {
 #endif
 #ifdef HAS_XROOTD
   case 'x': return new XrootdSimple; break;
+#endif
+#ifdef HAS_ROCKSDB
+  case 'r': return new RocksIndex; break;
 #endif
   default:
     cerr << "ERROR: unknown indexing type " << type << endl;

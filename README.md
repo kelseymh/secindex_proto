@@ -27,8 +27,21 @@ several kinds of indexes we are currently exploring:
 4)  A client-server lookup using Memcached to store key-value pairs, with
     both the objectID and chunk number stored as byte strings.
 
+*** Building requires that the user has installed both the memcached server,
+    as well as the libmemcached API.  The latter is available for MacOSX
+    from Homebrew, |brew install libmemcached|.
+
 5)  A client-server lookup using XRootD to store and access a set of flat
     files, as in option (2).
+
+*** Building requires that the user has installed XRootD (which should come
+    in through the LSST QServ stack).
+
+6)  A memory and file resident key-value lookup using RocksDB, with the
+    objectID as the key, and the chunk number as value.
+
+*** Building requires that the user has installed RocksDB, available for
+    MacOSX from Homebrew, |brew install rocksdb|.
 
 The main driver program is |index-performance|, which provides a command
 line interface to select which index model to test, and a range of sizes.
@@ -36,6 +49,6 @@ line interface to select which index model to test, and a range of sizes.
 There is also a shell script, |index-perf.csh|, which runs jobs for all the
 different models, and collects performance results in .csv files.
 
-Building requires that the user has installed both the memcached server, as
-well as the libmemcached API.  The latter is available for MacOSX from
-Homebrew, |brew install libmemcached|.
+The Makefile includes checks for the third-party packages needed above, and
+will exclude (without error) building those tests which have missing
+dependences.
