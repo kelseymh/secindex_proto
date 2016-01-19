@@ -215,7 +215,7 @@ pid_t XrootdSimple::launchService(const char* svcExec, const char* svcName) {
   }
 
   // Config file, log files, and internal files all go to data directory
-  execlp(svcExec, svcExec, "-n", svcName, "-c", cfn.c_str(),
+  execlp(svcExec, svcExec, "-d", "-n", svcName, "-c", cfn.c_str(),
 	 "-l", log.c_str(), "-s", env.c_str(), (const char*)0);
       
   cerr << "FATAL ERROR in XrootdSimple: ";
