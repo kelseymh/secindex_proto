@@ -58,7 +58,7 @@ endif
 ifneq (,$(MYSQLCLIENT_DIR))
   BINSRC += mysql-index.cc
   LIBSRC += MysqlIndex.cc
-  CPPFLAGS += -I$(MYSQLCLIENT_DIR)/include
+  CPPFLAGS += -DHAS_MYSQL=1 -I$(MYSQLCLIENT_DIR)/include
   LDFLAGS += -L$(MYSQLCLIENT_DIR)/lib
   LDLIBS += -lmysqlclient
 endif

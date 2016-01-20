@@ -12,12 +12,24 @@
 
 
 MysqlIndex::MysqlIndex(int verbose)
-  : IndexTester("mysql",verbose), mysqlDB(0) {;}
+  : IndexTester("mysql",verbose), mysqlDB(0),
+    dbname("SecIdx"), table("chunks") {;}
 
 MysqlIndex::~MysqlIndex() {
   cleanup();
 }
 
+
+// Print MySQL error message if any in present
+
+void MysqlIndex::reportError() {
+  if (mysql_error(mysqlDB)[0] == '\0') return;	// No current error message
+
+  std::cerr << mysql_error(mysqlDB) << std::endl;
+}
+
+
+// Create and populate secondary index from scratch
 
 void MysqlIndex::create(unsigned long long asize) {
   if (!connect() || !mysqlDB) return;		// Avoid unnecessary work
@@ -28,27 +40,37 @@ void MysqlIndex::create(unsigned long long asize) {
 
 int MysqlIndex::value(unsigned long long index) {
   if (!mysqlDB) return 0xdeadbeef;		// Avoid unnecessary work
+
   std::stringstream lookup;
-  lookup << "SELECT chunkId FROM T WHERE objectId=" << index;
+  lookup << "SELECT chunkId FROM " << dbname << "." << table << " WHERE objectId=" << index;
 
   if (verboseLevel>1) std::cout << "sending: " << lookup.str() << std::endl;
 
   mysql_query(mysqlDB, lookup.str().c_str());
+  reportError();
 
   MYSQL_RES *result = mysql_store_result(mysqlDB);
   if (!result) {
-    std::cerr << "error selecting objectID " << index << "\n"
-	      << mysql_error(mysqlDB) << std::endl;
+    std::cerr << "error selecting objectID " << index << "\n";
+    reportError();
+
     return 0xdeadbeef;
   }
 
+  if (verboseLevel>1)
+    std::cout << "got " << mysql_num_rows(result) << " rows, with "
+	      << mysql_num_fields(result) << " columns" << std::endl;
+
   MYSQL_ROW row = mysql_fetch_row(result);	// There should be only one!
-  if (verboseLevel>1) {
-    std::cout << "first result: " << row[0] << " returned " << row[1]
-	      << std::endl;
+  if (!row) {
+    std::cerr << "error!  null result selecting objectID " << index
+	      << std::endl; 
+    return 0xdeadbeef;
   }
 
-  int chunk = strtol(row[1], 0, 0);
+  if (verboseLevel>1) std::cout << "first result: " << row[0] << std::endl;
+
+  int chunk = strtol(row[0], 0, 0);
   mysql_free_result(result);
 
   return chunk;
@@ -64,7 +86,7 @@ bool MysqlIndex::connect(const char* dbname) {
   // connect to mysql server, no particular database
   mysqlDB = mysql_init(NULL);
   
-  if (!mysql_real_connect(mysqlDB,"127.0.0.1","kelsey","",dbname,3306,NULL,0)) {
+  if (!mysql_real_connect(mysqlDB,"127.0.0.1","root","",dbname,3306,NULL,0)) {
     std::cerr << mysql_error(mysqlDB) << std::endl;
     mysql_close(mysqlDB);
     mysqlDB = 0;
@@ -79,13 +101,29 @@ void MysqlIndex::createTable() {
 
   if (verboseLevel) std::cout << "MysqlIndex::createTable" << std::endl;
 
-  mysql_query(mysqlDB, "CREATE DATABASE SecIdx");
-  mysql_close(mysqlDB);
-  mysqlDB = 0;
+  std::string makedb = "CREATE DATABASE "+dbname;
+  if (verboseLevel>1) std::cout << "sending: " << makedb << std::endl;
 
-  if (!connect("SecIdx")) return;
+  mysql_query(mysqlDB, makedb.c_str());
+  reportError();
 
-  mysql_query(mysqlDB, "CREATE TABLE m(objectId BIGINT NOT NULL PRIMARY KEY, chunkId INT NOT NULL) ENGINE='InnoDB'");
+  std::string usedb = "USE "+dbname;
+  if (verboseLevel>1) std::cout << "sending: " << usedb << std::endl;
+
+  mysql_query(mysqlDB, usedb.c_str());
+  reportError();
+
+  std::string maketbl = "CREATE TABLE " + table + " (objectId BIGINT NOT NULL PRIMARY KEY, chunkId INT NOT NULL) ENGINE='InnoDB'";
+  if (verboseLevel>1) std::cout << "sending: " << maketbl << std::endl;
+
+  mysql_query(mysqlDB, maketbl.c_str());
+  reportError();
+
+  mysql_query(mysqlDB, "GRANT ALL on *.* TO ''@'%'");
+  reportError();
+
+  mysql_query(mysqlDB, "GRANT ALL on *.* TO 'kelsey'@'%'");
+  reportError();
 }
 
 void MysqlIndex::fillTable(unsigned long long asize) {
@@ -99,7 +137,7 @@ void MysqlIndex::fillTable(unsigned long long asize) {
     std::cout << " Got " << nTens << " powers of ten" << std::endl;
 
   std::stringstream theInsert;
-  theInsert << "INSERT INTO m(objectId, chunkID)"
+  theInsert << "INSERT INTO " << table << "(objectId, chunkId)"
 	    << " SELECT @row := @row + 1 AS row, 0 FROM \n";
   for (int iTen=0; iTen < nTens; iTen++) {
     theInsert << "(SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL"
@@ -128,6 +166,7 @@ void MysqlIndex::fillTable(unsigned long long asize) {
     std::cout << "sending: " << theInsert.str() << std::endl;
 
   mysql_query(mysqlDB, theInsert.str().c_str());
+  reportError();
 }
 
 
@@ -136,8 +175,14 @@ void MysqlIndex::cleanup() {
 
   if (verboseLevel) std::cout << "MysqlIndex::cleanup" << std::endl;
 
-  mysql_query(mysqlDB, "DROP TABLE m");
-  mysql_query(mysqlDB, "DROP DATABASE SecIdx");
+  std::string droptbl = "DROP TABLE " + table;
+  mysql_query(mysqlDB, droptbl.c_str());
+  reportError();
+
+  std::string dropdb = "DROP DATABASE " + dbname;
+  mysql_query(mysqlDB, dropdb.c_str());
+  reportError();
+
   mysql_close(mysqlDB);
   mysqlDB = 0;
 }

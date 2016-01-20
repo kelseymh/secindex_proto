@@ -7,6 +7,7 @@
 # 20151113  Add XRootD, drop redirection (handled using job name)
 # 20151123  Update test ranges to reflect latest performance results
 # 20151124  Add RocksDB test
+# 20160119  Add MySql (InnoDB) test
 
 ./index-performance array     100000000  15000000000
 ./index-performance blocks    100000000  15000000000
@@ -14,4 +15,5 @@
 ./index-performance file      100000000 100000000000
 ./index-performance memcached  10000000    150000000
 ./index-performance xrootd     10000000  10000000000
-./index-performance rocksdb    10000000  10000000000
+### ./index-performance rocksdb    10000000  10000000000
+./index-performance mysql      10000000  10000000000

@@ -22,6 +22,7 @@
 // memcached	Key-value pairs registered to a Memcached server
 // xrootd	Binary files storing ints, accessed via XRootD
 // rocksdb	Key-value pairs registered to a RocksDB instance
+// mysql	True database system, using same technology as QServ
 //
 // The type may be specified by the first character, if desired.
 
@@ -29,6 +30,7 @@
 // 20151028  Add std::map<> option
 // 20151110  Add XRootD option, use preprocessor macros for Memcached, XRootD
 // 20151125  Add RocksDB option, use preprocessor macro
+// 20160119  Add MySQL with InnoDB option
 
 #include "ArrayIndex.hh"
 #include "BlockArrays.hh"
@@ -42,6 +44,9 @@
 #endif
 #ifdef HAS_ROCKSDB
 #include "RocksIndex.hh"
+#endif
+#ifdef HAS_MYSQL
+#include "MysqlIndex.hh"
 #endif
 #include <stdlib.h>
 #include <cmath>
@@ -62,15 +67,24 @@ IndexTester* getTester(const string& type) {
   case 'a': return new ArrayIndex; break;
   case 'b': return new BlockArrays; break;
   case 'f': return new FileIndex; break;
-  case 's': return new MapIndex; break;
+  case 'm':
+    switch (type[1]) {
 #ifdef HAS_MEMCACHED
-  case 'm': return new MemCDIndex; break;
+    case 'e': return new MemCDIndex; break;
 #endif
-#ifdef HAS_XROOTD
-  case 'x': return new XrootdSimple; break;
+#ifdef HAS_MYSQL
+    case 'y': return new MysqlIndex; break;
 #endif
+    default:
+      cerr << "ERROR: unknown indexing type " << type << endl;
+      return 0;
+    }; break;
 #ifdef HAS_ROCKSDB
   case 'r': return new RocksIndex; break;
+#endif
+  case 's': return new MapIndex; break;
+#ifdef HAS_XROOTD
+  case 'x': return new XrootdSimple; break;
 #endif
   default:
     cerr << "ERROR: unknown indexing type " << type << endl;

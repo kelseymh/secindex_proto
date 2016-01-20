@@ -7,6 +7,7 @@
 
 #include "IndexTester.hh"
 #include <mysql/mysql.h>	/* Needed for MYSQL typedef below */
+#include <string>
 
 
 class MysqlIndex : public IndexTester {
@@ -23,8 +24,12 @@ protected:
   void fillTable(unsigned long long asize);
   void cleanup();
 
+  void reportError();		// Print MySQL error message if any
+
 private:
   MYSQL *mysqlDB;
+  std::string dbname;
+  std::string table;
 };
 
 #endif	/* MYSQL_INDEX_HH */
