@@ -205,18 +205,18 @@ pid_t XrootdSimple::launchService(const char* svcExec, const char* svcName) {
   }
   
   string cfn = dirName + "/" + xrdConfigName;
-  string log = dirName + "/" + svcExec + "-" + svcName + ".log";
+  string log = dirName + "/" + svcExec + "." + svcName + ".log";
   string env = dirName + "/" + svcExec + "." + svcName + ".env";
 
-  if (verboseLevel>2) {
-    cout << svcExec << " -n " << svcName << " -c " << cfn
-	 << " -l " << log << " -s " << env
-	 << endl;
+  if (verboseLevel>1) {
+    cout << svcExec << " -d -n " << svcName << " -c " << cfn
+	 << " -l " << log << " -s " << env << endl;
   }
 
   // Config file, log files, and internal files all go to data directory
-  execlp(svcExec, svcExec, "-d", "-n", svcName, "-c", cfn.c_str(),
-	 "-l", log.c_str(), "-s", env.c_str(), (const char*)0);
+  execlp(svcExec, svcExec, (verboseLevel?"-d":(const char*)0),
+	 "-n", svcName, "-c", cfn.c_str(), "-l", log.c_str(), "-s", env.c_str(),
+	 (const char*)0);
       
   cerr << "FATAL ERROR in XrootdSimple: ";
   perror("execlp");
