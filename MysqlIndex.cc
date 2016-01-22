@@ -149,12 +149,13 @@ void MysqlIndex::fillTable(unsigned long long asize) {
   // Do a few extras at the end to get the desired DB size
   int nExtra = (int)std::ceil((double)asize / pow(10., nTens));
   if (verboseLevel>1)
-    std::cout << " Got " << nExtra << " extra factor" << std::endl;
+    std::cout << " Got extra factor of " << nExtra << std::endl;
 
   if (nExtra > 1) {
     theInsert << "(";
     for (int iExtra=0; iExtra < nExtra; iExtra++) {
-      theInsert << "SELECT " << iExtra << " UNION ALL";
+      theInsert << " SELECT " << iExtra;
+      if (iExtra < nExtra-1) theInsert << " UNION ALL";
     }
     theInsert << ") t" << nTens << ", \n";
   }
