@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
   std::cout << "RocksDB Table " << arraySize << " elements, " << queryTrials
 	    << " trials" << std::endl;
 
-  RocksIndex memcd(2);		// Verbosity
-  memcd.CreateTable(arraySize);
-  memcd.ExerciseTable(queryTrials);
+  RocksIndex rocks(2);		// Verbosity
+  rocks.CreateTable(arraySize);
+  rocks.ExerciseTable(queryTrials);
 }

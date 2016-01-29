@@ -86,7 +86,7 @@ bool MysqlIndex::connect(const char* dbname) {
   // connect to mysql server, no particular database
   mysqlDB = mysql_init(NULL);
   
-  if (!mysql_real_connect(mysqlDB,"127.0.0.1","root","",dbname,3306,NULL,0)) {
+  if (!mysql_real_connect(mysqlDB,"127.0.0.1","root","changeme",dbname,13306,NULL,0)) {
     std::cerr << mysql_error(mysqlDB) << std::endl;
     mysql_close(mysqlDB);
     mysqlDB = 0;
