@@ -5,6 +5,7 @@
 
 #include "RocksIndex.hh"
 #include "rocksdb/db.h"
+#include "rocksdb/table.h"
 #include <signal.h>
 #include <string.h>
 #include <stdio.h>
@@ -32,10 +33,29 @@ void RocksIndex::create(unsigned long long asize) {
   if (rocksDB) delete rocksDB;
 
   rocksDB = 0;
+
+  // Buffer for all RocksDB activity, to report errors
+  rocksdb::Status dbstat;
+
+  // Use Bloom filter with a large block size to improve lookup speed
   rocksdb::Options options;
   options.create_if_missing = true;
-  if (!rocksdb::DB::Open(options, "/tmp/rocksdb", &rocksDB).ok()) {
-    cerr << "Failed to create RocksDB file /tmp/rocksdb" << endl;
+  options.stats_dump_period_sec = 30;		// Lots of dumps!
+  options.max_background_flushes = 4;		// Improves writing efficiency
+  options.max_background_compactions = 4;
+  options.OptimizeForPointLookup(10);		// Bloom filter, units are MB
+  options.memtable_prefix_bloom_bits = 8000000;
+  options.max_open_files = 150;			// Avoids "too many files" error
+
+  rocksdb::BlockBasedTableOptions tblopt;
+  tblopt.checksum = rocksdb::kxxHash;		// Default crc32 doesn't work?!?
+  //*** tblopt.block_size = 1e5;		// What size would be best?
+  options.table_factory.reset(NewBlockBasedTableFactory(tblopt));
+
+  dbstat = rocksdb::DB::Open(options, "/tmp/rocksdb", &rocksDB);
+  if (!dbstat.ok()) {
+    cerr << "Failed to create RocksDB database in /tmp/rocksdb\n"
+	 << dbstat.ToString() << endl;
     rocksDB = 0;
     return;
   }
@@ -45,15 +65,16 @@ void RocksIndex::create(unsigned long long asize) {
   // Do batch-based filling here for maximum efficiency
   static const int zero=0;		// Write the same value every time
   rocksdb::WriteBatch batch;
-  rocksdb::Status dbstat;
   for (unsigned long long i=0; i<asize; i++) {
     rocksdb::Slice key((const char*)&i, sizeof(unsigned long long));
     rocksdb::Slice val((const char*)&zero, sizeof(int));
     batch.Put(key, val);
 
     if (i%1000000 == 999999) {		// Flush buffer every million objects
-      if (!rocksDB->Write(rocksdb::WriteOptions(), &batch).ok()) {
-	cerr << "Failed to write data block " << i/1000000 << endl;
+      dbstat = rocksDB->Write(rocksdb::WriteOptions(), &batch);
+      if (!dbstat.ok()) {
+	cerr << "Failed to write data block " << i/1000000 << ": "
+	     << dbstat.ToString() << endl;
 	batch.Clear();
 	break;
       }
@@ -62,8 +83,9 @@ void RocksIndex::create(unsigned long long asize) {
   }
 
   if (batch.Count() > 0) {		// Flush any residual objects
-    if (!rocksDB->Write(rocksdb::WriteOptions(), &batch).ok()) {
-      cerr << "Failed to write final data block" << endl;
+    dbstat = rocksDB->Write(rocksdb::WriteOptions(), &batch);
+    if (!dbstat.ok()) {
+      cerr << "Failed to write final data block: " << dbstat.ToString() << endl;
     }
   }
 }
@@ -79,8 +101,10 @@ int RocksIndex::value(unsigned long long index) {
   // NOTE:  RocksDB only returns std::string values; must use as buffer
   std::string valbuf(sizeof(int), '\0');
   rocksdb::Slice key((const char*)&index, sizeof(unsigned long long));
-  if (!rocksDB->Get(rocksdb::ReadOptions(), key, &valbuf).ok()) {
-    cerr << "Failed to read " << index << endl;
+
+  rocksdb::Status dbstat = rocksDB->Get(rocksdb::ReadOptions(), key, &valbuf);
+  if (!dbstat.ok()) {
+    cerr << "\nFailed to read " << index << ": " << dbstat.ToString() << endl;
     return 0xdeadbeef;
   }
 
