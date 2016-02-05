@@ -45,11 +45,13 @@ void RocksIndex::create(unsigned long long asize) {
   options.max_background_compactions = 4;
   options.OptimizeForPointLookup(10);		// Bloom filter, units are MB
   options.memtable_prefix_bloom_bits = 8000000;
-  options.max_open_files = 150;			// Avoids "too many files" error
+  //*** options.max_open_files = 150;		// Avoids "too many files" error
+  options.max_open_files = -1;
+  options.target_file_size_base = 64e6;		// Allow all files to stay open
+  //*** options.target_file_size_multiplier = 2;
 
   rocksdb::BlockBasedTableOptions tblopt;
   tblopt.checksum = rocksdb::kxxHash;		// Default crc32 doesn't work?!?
-  //*** tblopt.block_size = 1e5;		// What size would be best?
   options.table_factory.reset(NewBlockBasedTableFactory(tblopt));
 
   dbstat = rocksdb::DB::Open(options, "/tmp/rocksdb", &rocksDB);
