@@ -22,7 +22,7 @@ unsigned long long IndexTester::randomIndex() const {
 // Initialize new table via subclass, collecting performance statistics
 
 void IndexTester::CreateTable(unsigned long long asize) {
-  if (verboseLevel>1) std::cout << "CreateTable " << asize << std::endl;
+  if (verboseLevel) std::cout << "CreateTable " << asize << std::endl;
 
   tableSize = asize;		// Store value for random generation
   lastTrials = 0;
@@ -39,7 +39,7 @@ void IndexTester::CreateTable(unsigned long long asize) {
 // Multiple random accesses on table, collecting performance statistics
 
 void IndexTester::ExerciseTable(long ntrials) {
-  if (verboseLevel>1) std::cout << "ExerciseTable " << ntrials << std::endl;
+  if (verboseLevel) std::cout << "ExerciseTable " << ntrials << std::endl;
 
   int idx, val;
   usage.zero();

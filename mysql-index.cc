@@ -21,6 +21,8 @@ int main(int argc, char* argv[]) {
 	    << queryTrials << " trials" << std::endl;
 
   MysqlIndex theDB(2);		// Verbosity
+  theDB.setTableSize(40e6);	// Use smaller blocks of data for efficiency
+
   theDB.CreateTable(arraySize);
   theDB.ExerciseTable(queryTrials);
 }

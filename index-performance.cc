@@ -73,12 +73,14 @@ IndexTester* getTester(const string& type) {
     case 'e': return new MemCDIndex; break;
 #endif
 #ifdef HAS_MYSQL
-    case 'y': return new MysqlIndex; break;
+    case 'y': {
+      MysqlIndex* mysql = new MysqlIndex;
+      mysql->setTableSize(40e6);
+      return mysql;
+    } break;
 #endif
-    default:
-      cerr << "ERROR: unknown indexing type " << type << endl;
-      return 0;
-    }; break;
+    default: break;
+    } break;
 #ifdef HAS_ROCKSDB
   case 'r': return new RocksIndex; break;
 #endif
@@ -86,10 +88,11 @@ IndexTester* getTester(const string& type) {
 #ifdef HAS_XROOTD
   case 'x': return new XrootdSimple; break;
 #endif
-  default:
-    cerr << "ERROR: unknown indexing type " << type << endl;
-    return 0;
+  default: break;
   }
+
+  // Falls through if nothing matched
+  cerr << "ERROR: unknown indexing type " << type << endl;
   return 0;
 }
 
