@@ -26,6 +26,10 @@ public:
   int GetVerboseLevel() const { return verboseLevel; }
   const char* GetName() const { return tableName; }
 
+  // Support sparse objectID values to support bulk update tests
+  void SetIndexSpacing(unsigned step=1) { indexStep = step; }
+  unsigned GetIndexSpacing() const { return indexStep; }
+
   // Generate test and print comma-separated data; asize=0 for column headings
   void TestAndReport(objectId_t asize, long ntrials, std::ostream& csv);
 
@@ -40,10 +44,11 @@ protected:
   virtual void update(const char* datafile) {;}		// May be unimplemented
   virtual chunkId_t value(objectId_t index) = 0;
 
-  virtual objectId_t randomIndex() const;
+  objectId_t randomIndex() const;
 
   int verboseLevel;		// For informational messages
   objectId_t tableSize;		// Used to generate random indices
+  unsigned indexStep;		// Interval for generating object IDs
 
 private:
   const char* tableName;	// For writing CSV output

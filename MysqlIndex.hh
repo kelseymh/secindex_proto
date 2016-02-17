@@ -21,13 +21,7 @@ public:
   // Call this function before running to create multiple smaller tables
   void setTableSize(objectId_t max=0ULL) { blockSize = max; }
 
-  // Call this function to space out indices for insertion tests
-  void setIndexStep(unsigned step=1) { indexStep = step; }
-
 protected:
-  // Override base version to produce non-contiguous indices
-  virtual objectId_t randomIndex() const;
-
   virtual void create(objectId_t asize);
   virtual void update(const char* datafile);
   virtual chunkId_t value(objectId_t objID);
@@ -66,8 +60,6 @@ private:
   MYSQL *mysqlDB;
   std::string dbname;
   std::string table;
-
-  unsigned indexStep;			// Spacing between successive indices
 
   objectId_t blockSize;		// For dividing overly large tables
 };

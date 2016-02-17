@@ -6,6 +6,7 @@
 // 20151113  Fix server configs per Andy H., move all temp files into data dir
 // 20151113  Instead of "localhost", use call to gethostname() to get string
 // 20151116  Remove debugging option from XRootD services.
+// 20160217  Suppress sparse indexing for now, requires invasive changes
 
 #include "XrootdSimple.hh"
 #include "XrdCl/XrdClFile.hh"
@@ -45,6 +46,8 @@ XrootdSimple::~XrootdSimple() {
 // Interface to base class for constructing and accessing servers
 
 void XrootdSimple::create(objectId_t asize) {
+  SetIndexSpacing(1);		// Override user request for sparse indices
+
   if (verboseLevel) cout << "XrootdSimple::create " << asize << endl;
 
   if (!writeXrdConfigFile()) {

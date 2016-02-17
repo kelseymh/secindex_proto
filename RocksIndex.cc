@@ -2,6 +2,7 @@
 // RocksIndex.hh -- Exercise performance of RocksDB interface as lookup table.
 //
 // 20151124  Michael Kelsey
+// 20160217  Support sparse index values
 
 #include "RocksIndex.hh"
 #include "rocksdb/db.h"
@@ -65,10 +66,13 @@ void RocksIndex::create(objectId_t asize) {
   if (verboseLevel>1) cout << "Filling " << asize << " keys" << endl;
 
   // Do batch-based filling here for maximum efficiency
-  static const int zero=0;		// Write the same value every time
+  const int zero=0;		// Write the same value every time
+  objectId_t objID=0;		// Buffer for computing sparse indices
+
   rocksdb::WriteBatch batch;
   for (objectId_t i=0; i<asize; i++) {
-    rocksdb::Slice key((const char*)&i, sizeof(objectId_t));
+    objID = i * indexStep;
+    rocksdb::Slice key((const char*)&objID, sizeof(objectId_t));
     rocksdb::Slice val((const char*)&zero, sizeof(int));
     batch.Put(key, val);
 

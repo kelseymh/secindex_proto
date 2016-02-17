@@ -4,6 +4,7 @@
 // 20151023  Michael Kelsey
 // 20151104  Bug fix:  Must terminate execvp() arg list with null pointer
 // 20151118  Add diagnostic messages for all memcached actions
+// 20160217  Support sparse indexing into map
 
 #include "MemCDIndex.hh"
 #include <libmemcached/memcached.h>
@@ -101,9 +102,9 @@ void MemCDIndex::create(objectId_t asize) {
 
   if (verboseLevel>1) cout << "Filling " << asize << " keys" << endl;
 
+  const chunkId_t zero=0;		// All keys have same dummy value
   memcached_return_t error;
-  static const int zero=0;		// All keys have same dummy value
-  for (objectId_t key=0; key<asize; key++) {
+  for (objectId_t key=0; key<asize*indexStep; key+=indexStep) {
     error = memcached_set(memcd, (const char*)&key, sizeof(key),
 			  (const char*)&zero, sizeof(int), 0, 0);
     if (error != MEMCACHED_SUCCESS) {

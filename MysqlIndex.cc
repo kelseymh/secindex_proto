@@ -15,7 +15,7 @@
 
 MysqlIndex::MysqlIndex(int verbose)
   : IndexTester("mysql",verbose), mysqlDB(0), dbname("SecIdx"),
-    table("chunks"), indexStep(1), blockSize(0ULL) {;}
+    table("chunks"), blockSize(0ULL) {;}
 
 MysqlIndex::~MysqlIndex() {
   cleanup();
@@ -79,12 +79,7 @@ chunkId_t MysqlIndex::value(objectId_t objID) {
 }
 
 
-// Generate random index with gaps between the indices
-
-objectId_t MysqlIndex::randomIndex() const {
-  return IndexTester::randomIndex() * indexStep;
-}
-
+// Configure MySQL database and tables for use
 
 bool MysqlIndex::connect(const std::string& newDBname) {
   if (verboseLevel) {
@@ -96,12 +91,9 @@ bool MysqlIndex::connect(const std::string& newDBname) {
 
   if (!newDBname.empty()) dbname = newDBname;	// Replace database name in use
 
-  // connect to mysql server, no particular database, allow "LOAD DATA LOCAL"
+  // connect to mysql server, no particular database
   mysqlDB = mysql_init(NULL);
-  if (!mysql_options(mysqlDB, MYSQL_OPT_LOCAL_INFILE, 0)) {
-    std::cerr << mysql_error(mysqlDB) << std::endl;
-  }
-    
+
   if (!mysql_real_connect(mysqlDB,"127.0.0.1","root","changeme",
 			  "",13306,NULL,0)) {
     std::cerr << mysql_error(mysqlDB) << std::endl;
@@ -235,7 +227,7 @@ void MysqlIndex::update(const char* datafile) {
   if (verboseLevel) std::cout << "MysqlIndex::update " << datafile << std::endl;
 
   std::stringstream loadIt;
-  loadIt << "LOAD DATA LOCAL INFILE '" << datafile << "' INTO TABLE "
+  loadIt << "LOAD DATA INFILE '" << datafile << "' INTO TABLE "
 	 << makeTableName() << " FIELDS TERMINATED BY '\\t'";
 
   if (verboseLevel>1) std::cout << "sending: " << loadIt.str() << std::endl;

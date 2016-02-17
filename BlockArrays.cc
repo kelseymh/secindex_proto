@@ -3,6 +3,7 @@
 // lookup table.
 //
 // 20151024  Michael Kelsey
+// 20160217  Force sequential indices, overriding user setting
 
 #include "BlockArrays.hh"
 
@@ -10,6 +11,8 @@
 // Create a set of subarrays to cover the whole index range
 
 void BlockArrays::create(objectId_t asize) {
+  SetIndexSpacing(1);			// Ensure that indices are dense
+
   if (blocks) clearBlocks();		// Avoid memory leaks
   blockCount = 0;
   

@@ -2,6 +2,7 @@
 // FileIndex.hh -- Exercise performance of large flat file as lookup table.
 //
 // 20151023  Michael Kelsey
+// 20160217  Support sparse (but evenly spaced) index values
 
 #define _FILE_OFFSET_BITS 64	/* Enables large-file support */
 #define _LARGEFILE64_SOURCE
@@ -35,7 +36,9 @@ void FileIndex::create(objectId_t asize) {
 // Access requested array element with existence check
 
 chunkId_t FileIndex::value(objectId_t index) {
-  off64_t offset = (off64_t)(sizeof(chunkId_t)*index);
+  // De-sparsify input value by step-size
+  off64_t offset = (off64_t)(sizeof(chunkId_t)*index/indexStep);
+
   if (0 != fseeko(afile, offset, SEEK_SET)) return 0xdeadbeef;
   
   static chunkId_t val;	   		// Avoid allocation overhead

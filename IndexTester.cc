@@ -15,14 +15,19 @@
 // Constructor
 
 IndexTester::IndexTester(const char* name, int verbose) :
-  verboseLevel(verbose), tableSize(0ULL), tableName(name), lastTrials(0L) {;}
+  verboseLevel(verbose), tableSize(0ULL), indexStep(1), tableName(name),
+  lastTrials(0L) {;}
 
 
 // Generate random index spanning full size of table
 
 objectId_t IndexTester::randomIndex() const {
-  if (tableSize < LONG_MAX) return random()%tableSize;	// random() uses LONG
-  return (random()*ULONG_MAX + random()) % tableSize;	// or construct LLONG
+  objectId_t rval = 0ULL;
+
+  if (tableSize < LONG_MAX) rval = random()%tableSize;	// random() uses LONG
+  else rval = (random()*ULONG_MAX + random()) % tableSize;
+
+  return rval*indexStep;	// Sparsify random values
 }
 
 

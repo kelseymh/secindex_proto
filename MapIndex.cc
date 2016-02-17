@@ -2,6 +2,7 @@
 // MapIndex.cc -- Exercise performance of std::map<> as lookup table.
 //
 // 20151028  Michael Kelsey
+// 20160217  Support sparse indexing into map
 
 #include "MapIndex.hh"
 #include <map>
@@ -13,7 +14,9 @@ void MapIndex::create(objectId_t asize) {
   map.clear();
   if (asize == 0) return;		// Avoid unnecessary work
 
-  for (objectId_t i=0; i<asize; map[i++]=0) {;}
+  for (objectId_t i=0; i<asize; i++) {
+    map[i*indexStep] = 0;
+  }
 }
 
 
