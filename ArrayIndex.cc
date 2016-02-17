@@ -8,14 +8,14 @@
 
 // Construct single massive array in memory
 
-void ArrayIndex::create(unsigned long long asize) {
+void ArrayIndex::create(objectId_t asize) {
   if (array) delete[] array;			// Avoid memory leaks
-  if (asize>0) array = new int[asize]();	// Fill with zeroes
+  if (asize>0) array = new chunkId_t[asize]();	// Fill with zeroes
 }
 
 
 // Access requested array element with existence check
 
-int ArrayIndex::value(unsigned long long index) {
+chunkId_t ArrayIndex::value(objectId_t index) {
   return (array ? array[index] : 0xdeadbeef);
 }

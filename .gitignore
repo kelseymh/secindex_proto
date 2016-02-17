@@ -10,6 +10,7 @@ simple-array
 simple-xrd
 query-xrd
 rocksdb-index
+mysql-index
 # Ignore CSV files produced by running test jobs locally
 *.csv
 # Ignore some common cruft files

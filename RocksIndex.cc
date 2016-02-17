@@ -27,7 +27,7 @@ RocksIndex::~RocksIndex() {
 
 
 // Create new database for testing
-void RocksIndex::create(unsigned long long asize) {
+void RocksIndex::create(objectId_t asize) {
   if (asize==0) return;		// Don't create a null object!
 
   if (rocksDB) delete rocksDB;
@@ -67,8 +67,8 @@ void RocksIndex::create(unsigned long long asize) {
   // Do batch-based filling here for maximum efficiency
   static const int zero=0;		// Write the same value every time
   rocksdb::WriteBatch batch;
-  for (unsigned long long i=0; i<asize; i++) {
-    rocksdb::Slice key((const char*)&i, sizeof(unsigned long long));
+  for (objectId_t i=0; i<asize; i++) {
+    rocksdb::Slice key((const char*)&i, sizeof(objectId_t));
     rocksdb::Slice val((const char*)&zero, sizeof(int));
     batch.Put(key, val);
 
@@ -95,14 +95,14 @@ void RocksIndex::create(unsigned long long asize) {
 
 // Query database to get requested index entry
 
-int RocksIndex::value(unsigned long long index) {
+chunkId_t RocksIndex::value(objectId_t index) {
   if (!rocksDB) return 0xdeadbeef;	// Include sanity check
 
   if (verboseLevel>1) cout << "Looking for " << index;
 
   // NOTE:  RocksDB only returns std::string values; must use as buffer
-  std::string valbuf(sizeof(int), '\0');
-  rocksdb::Slice key((const char*)&index, sizeof(unsigned long long));
+  std::string valbuf(sizeof(chunkId_t), '\0');
+  rocksdb::Slice key((const char*)&index, sizeof(objectId_t));
 
   rocksdb::Status dbstat = rocksDB->Get(rocksdb::ReadOptions(), key, &valbuf);
   if (!dbstat.ok()) {
@@ -112,7 +112,7 @@ int RocksIndex::value(unsigned long long index) {
 
   // Interpret byte contents of string as integer value
   if (verboseLevel>1)
-    cout << " got value " << *(const int*)(valbuf.data()) << endl;
+    cout << " got value " << *(const chunkId_t*)(valbuf.data()) << endl;
 
-  return *(const int*)(valbuf.data());
+  return *(const chunkId_t*)(valbuf.data());
 }

@@ -19,11 +19,11 @@ typedef off_t off64_t;
 
 // Create gigantic flat file full of index entries, then re-open for reading
 
-void FileIndex::create(unsigned long long asize) {
+void FileIndex::create(objectId_t asize) {
   static const int zero=0;		// Passed to fwrite as pointer
 
   FILE* outf = fopen(fname, "w");
-  for (unsigned long long i=0; i<asize; i++) {
+  for (objectId_t i=0; i<asize; i++) {
     fwrite(&zero,sizeof(int),1,outf);
   }
 
@@ -34,12 +34,12 @@ void FileIndex::create(unsigned long long asize) {
 
 // Access requested array element with existence check
 
-int FileIndex::value(unsigned long long index) {
-  off64_t offset = (off64_t)(sizeof(int)*index);
+chunkId_t FileIndex::value(objectId_t index) {
+  off64_t offset = (off64_t)(sizeof(chunkId_t)*index);
   if (0 != fseeko(afile, offset, SEEK_SET)) return 0xdeadbeef;
   
-  static int val;	   		// Avoid allocation overhead
-  fread(&val, sizeof(int), 1, afile);
+  static chunkId_t val;	   		// Avoid allocation overhead
+  fread(&val, sizeof(chunkId_t), 1, afile);
   return val;
 }
 

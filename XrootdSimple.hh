@@ -18,8 +18,8 @@ public:
   virtual ~XrootdSimple();
 
 protected:
-  virtual void create(unsigned long long asize);
-  virtual int value(unsigned long long index);
+  virtual void create(objectId_t asize);
+  virtual chunkId_t value(objectId_t index);
 
   bool createTempFiles(size_t nfiles);
   bool writeXrdConfigFile();

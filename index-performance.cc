@@ -56,9 +56,9 @@
 using namespace std;
 
 
-// Abbreviate "unsigned long long" for convenience
+// Abbreviate "objectId_t" for convenience
 
-typedef unsigned long long ULL;
+typedef objectId_t ULL;
 
 // Get testing driver based on type name
 

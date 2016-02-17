@@ -9,23 +9,23 @@
 
 // Create a set of subarrays to cover the whole index range
 
-void BlockArrays::create(unsigned long long asize) {
+void BlockArrays::create(objectId_t asize) {
   if (blocks) clearBlocks();		// Avoid memory leaks
   blockCount = 0;
   
   if (asize==0) return;
   
   blockCount = asize / blockSize;
-  blocks = new int* [blockCount]();
+  blocks = new chunkId_t* [blockCount]();
   for (unsigned i=0; i<blockCount; i++) {
-    blocks[i] = new int[blockSize]();		// Fill with zeroes
+    blocks[i] = new chunkId_t[blockSize]();		// Fill with zeroes
   }
 }
 
 
 // Access requested array element with existence check
 
-int BlockArrays::value(unsigned long long index) {
+chunkId_t BlockArrays::value(objectId_t index) {
   if (blockCount == 0 || blocks == 0) return 0xdeadbeef;
   return blocks[index/blockSize][index%blockSize];
 }

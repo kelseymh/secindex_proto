@@ -4,7 +4,7 @@
 
 
 // Get command line arguments for array size (100M) and number of trials (1M)
-void arrayArgs(int argc, char* argv[], unsigned long long& asize, int& reps) {
+void arrayArgs(int argc, char* argv[], objectId_t& asize, int& reps) {
   asize = 0;
   reps  = (argc>1) ? strtol(argv[2], 0, 0)   : 1000000;
 }
@@ -13,7 +13,7 @@ void arrayArgs(int argc, char* argv[], unsigned long long& asize, int& reps) {
 // Main program goes here
 
 int main(int argc, char* argv[]) {
-  unsigned long long arraySize;
+  objectId_t arraySize;
   int queryTrials;
   arrayArgs(argc, argv, arraySize, queryTrials);
 

@@ -6,14 +6,20 @@
 //
 // 20151023  Michael Kelsey
 // 20151113  Add accessors for verbosity and name
+// 20160216  Add interface and optional subclass function for bulk updates
+// 20160217  FINALLY:  Provide typedefs for "objectId_t" and "chunkId_t"
 
 #include "UsageTimer.hh"
 #include <iosfwd>
 
+// Use these everywhere for abstraction/convenience
+
+typedef unsigned long long objectId_t;
+typedef unsigned int chunkId_t;
+
 class IndexTester {
 public:
-  IndexTester(const char* name, int verbose=0) :
-    tableName(name), verboseLevel(verbose) {;}
+  IndexTester(const char* name, int verbose=0);
   virtual ~IndexTester() {;}
 
   void SetVerboseLevel(int verbose) { verboseLevel = verbose; }
@@ -21,21 +27,23 @@ public:
   const char* GetName() const { return tableName; }
 
   // Generate test and print comma-separated data; asize=0 for column headings
-  void TestAndReport(unsigned long long asize, long ntrials, std::ostream& csv);
+  void TestAndReport(objectId_t asize, long ntrials, std::ostream& csv);
 
-  void CreateTable(unsigned long long asize);
+  void CreateTable(objectId_t asize);
+  void UpdateTable(const char* datafile);
   void ExerciseTable(long ntrials);
   const UsageTimer& GetUsage() const { return usage; }
 
 protected:
   // Subclass must implement their own specific table creator and accessor
-  virtual void create(unsigned long long asize) = 0;
-  virtual int value(unsigned long long index) = 0;
+  virtual void create(objectId_t asize) = 0;
+  virtual void update(const char* datafile) {;}		// May be unimplemented
+  virtual chunkId_t value(objectId_t index) = 0;
 
-  unsigned long long randomIndex() const;
+  virtual objectId_t randomIndex() const;
 
   int verboseLevel;		// For informational messages
-  unsigned long long tableSize;	// Used to generate random indices
+  objectId_t tableSize;		// Used to generate random indices
 
 private:
   const char* tableName;	// For writing CSV output

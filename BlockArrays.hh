@@ -15,14 +15,14 @@ public:
   virtual ~BlockArrays() { clearBlocks(); }
 
 protected:
-  virtual void create(unsigned long long asize);
-  virtual int value(unsigned long long index);
+  virtual void create(objectId_t asize);
+  virtual chunkId_t value(objectId_t index);
   void clearBlocks();
 
 private:
   const size_t blockSize;
   unsigned blockCount;
-  int** blocks;
+  chunkId_t** blocks;
 };
 
 #endif	/* BLOCK_ARRAYS_HH */

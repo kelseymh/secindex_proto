@@ -9,16 +9,16 @@
 
 // Populate map with full range of keys, all values zero
 
-void MapIndex::create(unsigned long long asize) {
+void MapIndex::create(objectId_t asize) {
   map.clear();
   if (asize == 0) return;		// Avoid unnecessary work
 
-  for (unsigned long long i=0; i<asize; map[i++]=0) {;}
+  for (objectId_t i=0; i<asize; map[i++]=0) {;}
 }
 
 
 // Return chunk only if index was registered
 
-int MapIndex::value(unsigned long long index) {
+chunkId_t MapIndex::value(objectId_t index) {
   return (map.find(index)!=map.end()) ? map[index] : 0xdeadbeef;
 }

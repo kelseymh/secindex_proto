@@ -15,11 +15,11 @@ public:
   virtual ~MapIndex() {;}
 
 protected:
-  virtual void create(unsigned long long asize);
-  virtual int value(unsigned long long index);
+  virtual void create(objectId_t asize);
+  virtual chunkId_t value(objectId_t index);
 
 private:
-  std::map<unsigned long long, int> map;
+  std::map<objectId_t, chunkId_t> map;
 };
 
 #endif	/* MAP_INDEX_HH */

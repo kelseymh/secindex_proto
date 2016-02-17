@@ -4,6 +4,7 @@
 //
 // 20151023  Michael Kelsey
 // 20151102  Add missing #includes reported by GCC 4.8.2
+// 20160216  Add interface and optional subclass function for bulk updates
 
 #include "IndexTester.hh"
 #include <limits.h>
@@ -11,9 +12,15 @@
 #include <iostream>
 
 
+// Constructor
+
+IndexTester::IndexTester(const char* name, int verbose) :
+  verboseLevel(verbose), tableSize(0ULL), tableName(name), lastTrials(0L) {;}
+
+
 // Generate random index spanning full size of table
 
-unsigned long long IndexTester::randomIndex() const {
+objectId_t IndexTester::randomIndex() const {
   if (tableSize < LONG_MAX) return random()%tableSize;	// random() uses LONG
   return (random()*ULONG_MAX + random()) % tableSize;	// or construct LLONG
 }
@@ -21,7 +28,7 @@ unsigned long long IndexTester::randomIndex() const {
 
 // Initialize new table via subclass, collecting performance statistics
 
-void IndexTester::CreateTable(unsigned long long asize) {
+void IndexTester::CreateTable(objectId_t asize) {
   if (verboseLevel) std::cout << "CreateTable " << asize << std::endl;
 
   tableSize = asize;		// Store value for random generation
@@ -36,15 +43,31 @@ void IndexTester::CreateTable(unsigned long long asize) {
 }
 
 
+// Extend an existing table via subclass, collecting performance statistics
+
+void IndexTester::UpdateTable(const char* datafile) {
+  if (verboseLevel) std::cout << "UpdateTable " << datafile << std::endl;
+
+  usage.zero();
+  usage.start();
+  update(datafile);
+  usage.end();
+
+  if (verboseLevel) std::cout << "Bulk update " << usage << std::endl;
+}
+
+
 // Multiple random accesses on table, collecting performance statistics
 
 void IndexTester::ExerciseTable(long ntrials) {
   if (verboseLevel) std::cout << "ExerciseTable " << ntrials << std::endl;
 
-  int idx, val;
+  objectId_t idx;
+  chunkId_t val;
+
   usage.zero();
   usage.start();
-  for (int i=0; i<ntrials; i++) {
+  for (long i=0; i<ntrials; i++) {
     idx = randomIndex();
     val = value(idx);
   }
@@ -58,7 +81,7 @@ void IndexTester::ExerciseTable(long ntrials) {
 
 // Generate test and print comma-separated data; asize=0 for column headings
 
-void IndexTester::TestAndReport(unsigned long long asize, long ntrials,
+void IndexTester::TestAndReport(objectId_t asize, long ntrials,
 				std::ostream& csv) {
   if (asize == 0) {		// Special case: print column headings
     csv << "Type, Size (1e6), Init CPU (s), Init Clock (s)"

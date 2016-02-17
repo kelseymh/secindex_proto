@@ -5,6 +5,7 @@
 //
 // 20160119  Michael Kelsey
 // 20160204  Extend to support blocking data into smaller tables
+// 20160216  Add support for doing "bulk updates" from flat files
 
 #include "IndexTester.hh"
 #include <mysql/mysql.h>	/* Needed for MYSQL typedef below */
@@ -18,36 +19,43 @@ public:
 
 public:
   // Call this function before running to create multiple smaller tables
-  void setTableSize(unsigned long long max=0ULL) { tableSize = max; }
+  void setTableSize(objectId_t max=0ULL) { blockSize = max; }
+
+  // Call this function to space out indices for insertion tests
+  void setIndexStep(unsigned step=1) { indexStep = step; }
 
 protected:
-  virtual void create(unsigned long long asize);
-  virtual int value(unsigned long long objID);
+  // Override base version to produce non-contiguous indices
+  virtual objectId_t randomIndex() const;
 
-  bool connect(const char* dbname=0);
+  virtual void create(objectId_t asize);
+  virtual void update(const char* datafile);
+  virtual chunkId_t value(objectId_t objID);
+
+  bool connect(const std::string& newDBname="");
   void accessDatabase();
 
   void createTables();				// One for all, or multiple
   void createTable(int tblidx=-1);		// >= 0 allows data blocks
-  void fillTable(int tblidx, unsigned long long tsize,
-		 unsigned long long firstID);
+  void fillTable(int tblidx, objectId_t tsize,
+		 objectId_t firstID);
 
   void cleanup();
   void dropTable(int tblidx=-1);		// Drop specified table
 
-  MYSQL_RES* findObjectID(unsigned long long objID);  	  // Does MySQL query
-  int extractChunk(MYSQL_RES* result);		          // Parses result
+  MYSQL_RES* findObjectID(objectId_t objID);	// Does MySQL query
+  chunkId_t extractChunk(MYSQL_RES* result);	// Parses result
 
   // Wrapper functions to handle multiple tables for data blocks
 
   bool usingMultipleTables() const {		// Flag if data is in blocks
-    return (tableSize != 0ULL && tableSize < totalSize);
+    return (blockSize != 0ULL && blockSize < tableSize);
   }
 
   int numberOfTables() const;			// Total number of data blocks
 
-  int chooseTable(unsigned long long objID) const {	// Get table for ID
-    return (usingMultipleTables() ? (objID/tableSize) : -1);
+  int chooseTable(objectId_t objID) const {	// Get table for ID
+    return (usingMultipleTables() ? (objID/blockSize) : -1);
   }
 
   std::string makeTableName(int tblidx=-1) const;	// Unique block names
@@ -59,8 +67,9 @@ private:
   std::string dbname;
   std::string table;
 
-  unsigned long long totalSize;		// Save size from create() for blocking
-  unsigned long long tableSize;		// Table size for data blocking
+  unsigned indexStep;			// Spacing between successive indices
+
+  objectId_t blockSize;		// For dividing overly large tables
 };
 
 #endif	/* MYSQL_INDEX_HH */

@@ -17,11 +17,11 @@ public:
   virtual ~MemCDIndex();
 
 protected:
-  virtual void create(unsigned long long asize);
-  virtual int value(unsigned long long index);
+  virtual void create(objectId_t asize);
+  virtual chunkId_t value(objectId_t index);
 
-  bool launchServer(unsigned long long asize);
-  bool launchClient(unsigned long long asize);
+  bool launchServer(objectId_t asize);
+  bool launchClient(objectId_t asize);
 
   void killServer();
   void killClient();

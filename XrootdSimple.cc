@@ -44,7 +44,7 @@ XrootdSimple::~XrootdSimple() {
 
 // Interface to base class for constructing and accessing servers
 
-void XrootdSimple::create(unsigned long long asize) {
+void XrootdSimple::create(objectId_t asize) {
   if (verboseLevel) cout << "XrootdSimple::create " << asize << endl;
 
   if (!writeXrdConfigFile()) {
@@ -65,7 +65,7 @@ void XrootdSimple::create(unsigned long long asize) {
   sleep(10);		// Wait for services to be ready for access
 }
 
-int XrootdSimple::value(unsigned long long index) { 
+chunkId_t XrootdSimple::value(objectId_t index) { 
   if (verboseLevel>1) cout << "XrootdSimple::value " << index << endl;
 
   size_t ifile = index / entriesPerFile;
@@ -84,9 +84,9 @@ int XrootdSimple::value(unsigned long long index) {
 
   if (verboseLevel>2) cout << "... reading at offset " << offset << endl;
 
-  int readValue = 0;			// Input buffer from XRD
+  chunkId_t readValue = 0;			// Input buffer from XRD
   uint32_t readLen = 0;
-  if (!blockFile.Read(offset, sizeof(int), &readValue, readLen).IsOK()) {
+  if (!blockFile.Read(offset, sizeof(chunkId_t), &readValue, readLen).IsOK()) {
     cerr << "Unable to read " << xrdPath << " at offset " << offset << endl;
     return -1;
   }

@@ -8,6 +8,7 @@
 # 20151110  Reduce number of intermediate files by using lib(obj) dependences
 # 20151124  Add RocksDB support, need to require C++11
 # 20160119  Add MysqlDB support
+# 20160216  Add test job to exercise bulk updating of MySQL
 
 # Source and header files
 
@@ -54,12 +55,12 @@ ifneq  (,$(HASROCKSDB))
 endif
 
 # Check for LSST installation of MYSQL
-
-ifneq (,$(MYSQLCLIENT_DIR))
-  BINSRC += mysql-index.cc
+# NOTE:  After 2016_01 tag, MariaDB hijacks the MySQL path stuff
+ifneq (,$(MYSQL_INCLUDE_PATH))
+  BINSRC += mysql-index.cc mysql-update.cc
   LIBSRC += MysqlIndex.cc
-  CPPFLAGS += -DHAS_MYSQL=1 -I$(MYSQLCLIENT_DIR)/include
-  LDFLAGS += -L$(MYSQLCLIENT_DIR)/lib
+  CPPFLAGS += -DHAS_MYSQL=1 -I$(MYSQL_INCLUDE_PATH)/..
+  LDFLAGS += -L$(MYSQL_INCLUDE_PATH)/../../lib
   LDLIBS += -lmysqlclient
 endif
 
@@ -92,6 +93,7 @@ memcd-index.cc index-performance.cc   : MemCDIndex.hh
 simple-xrd.cc index-performance.cc    : XrootdSimple.hh
 rocksdb-index.cc index-performance.cc : RocksIndex.hh
 mysql-index.cc index-performance.cc   : MysqlIndex.hh
+mysql-update.cc                       : MysqlIndex.hh
 index-performance.cc                  : MapIndex.hh
 
 IndexTester.hh : UsageTimer.hh

@@ -14,8 +14,8 @@ public:
   virtual ~FileIndex() { close(); }
 
 protected:
-  virtual void create(unsigned long long asize);
-  virtual int value(unsigned long long index);
+  virtual void create(objectId_t asize);
+  virtual chunkId_t value(objectId_t index);
   void close();
 
 private:

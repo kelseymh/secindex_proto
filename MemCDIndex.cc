@@ -29,7 +29,7 @@ MemCDIndex::~MemCDIndex() {
 
 // Create new server as child process (any previous server is killed)
 
-bool MemCDIndex::launchServer(unsigned long long asize) {
+bool MemCDIndex::launchServer(objectId_t asize) {
   if (mcdsv) killServer();
   
   long needmem = asize/1000000LL * 48 + 1;	// 48 bytes/entry, in MB
@@ -63,7 +63,7 @@ bool MemCDIndex::launchServer(unsigned long long asize) {
 
 // Create client structure for sending/receiving data with server
 
-bool MemCDIndex::launchClient(unsigned long long asize) {
+bool MemCDIndex::launchClient(objectId_t asize) {
   if (memcd) killClient();
   if (!mcdsv) {
     cerr << "No memcached server!" << endl;
@@ -93,7 +93,7 @@ bool MemCDIndex::launchClient(unsigned long long asize) {
   return true;
 }
 
-void MemCDIndex::create(unsigned long long asize) {
+void MemCDIndex::create(objectId_t asize) {
   if (asize==0) return;		// Don't create a null object!
   
   launchServer(asize); if (!mcdsv) return;
@@ -103,7 +103,7 @@ void MemCDIndex::create(unsigned long long asize) {
 
   memcached_return_t error;
   static const int zero=0;		// All keys have same dummy value
-  for (unsigned long long key=0; key<asize; key++) {
+  for (objectId_t key=0; key<asize; key++) {
     error = memcached_set(memcd, (const char*)&key, sizeof(key),
 			  (const char*)&zero, sizeof(int), 0, 0);
     if (error != MEMCACHED_SUCCESS) {
@@ -116,7 +116,7 @@ void MemCDIndex::create(unsigned long long asize) {
 
 // Query server to get requested index entry
 
-int MemCDIndex::value(unsigned long long index) {
+chunkId_t MemCDIndex::value(objectId_t index) {
   if (!memcd) return 0xdeadbeef;	// Include sanity check
 
   if (verboseLevel>1) cout << "Looking for " << index;
@@ -132,7 +132,7 @@ int MemCDIndex::value(unsigned long long index) {
 			   
   if (!buf) return 0xdeadbeef;
 
-  int valbuf;			// To copy "byte array" into numeric value
+  chunkId_t valbuf;		// To copy "byte array" into numeric value
   memcpy(&valbuf, buf, blen);
   delete buf;			// Avoid memory leaks
 
