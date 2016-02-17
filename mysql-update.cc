@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   char * updAbsoluteFile = realpath(updFile, NULL);
 
   MysqlIndex theDB(2);		// Verbosity
-  theDB.setIndexStep(10);	// Leave gaps for later update
+  theDB.SetIndexSpacing(10);	// Leave gaps for later update
   theDB.CreateTable(arraySize);
   theDB.UpdateTable(updAbsoluteFile);
 
