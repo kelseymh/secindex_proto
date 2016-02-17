@@ -23,6 +23,7 @@
 // xrootd	Binary files storing ints, accessed via XRootD
 // rocksdb	Key-value pairs registered to a RocksDB instance
 // mysql	True database system, using same technology as QServ
+// umysql	Database system, with bulk update in place of queries
 //
 // The type may be specified by the first character, if desired.
 
@@ -31,6 +32,7 @@
 // 20151110  Add XRootD option, use preprocessor macros for Memcached, XRootD
 // 20151125  Add RocksDB option, use preprocessor macro
 // 20160119  Add MySQL with InnoDB option
+// 20160217  Add MySQL with bulk-updating test instead of queries
 
 #include "ArrayIndex.hh"
 #include "BlockArrays.hh"
@@ -47,6 +49,7 @@
 #endif
 #ifdef HAS_MYSQL
 #include "MysqlIndex.hh"
+#include "MysqlUpdate.hh"
 #endif
 #include <stdlib.h>
 #include <cmath>
@@ -85,6 +88,9 @@ IndexTester* getTester(const string& type) {
   case 'r': return new RocksIndex; break;
 #endif
   case 's': return new MapIndex; break;
+#ifdef HAS_MYSQL
+  case 'u': return new MysqlUpdate; break;
+#endif
 #ifdef HAS_XROOTD
   case 'x': return new XrootdSimple; break;
 #endif

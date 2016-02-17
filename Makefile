@@ -58,7 +58,7 @@ endif
 # NOTE:  After 2016_01 tag, MariaDB hijacks the MySQL path stuff
 ifneq (,$(MYSQL_INCLUDE_PATH))
   BINSRC += mysql-index.cc mysql-update.cc
-  LIBSRC += MysqlIndex.cc
+  LIBSRC += MysqlIndex.cc MysqlUpdate.cc
   CPPFLAGS += -DHAS_MYSQL=1 -I$(MYSQL_INCLUDE_PATH)/..
   LDFLAGS += -L$(MYSQL_INCLUDE_PATH)/../../lib
   LDLIBS += -lmysqlclient

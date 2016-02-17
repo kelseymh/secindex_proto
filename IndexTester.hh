@@ -31,10 +31,10 @@ public:
   unsigned GetIndexSpacing() const { return indexStep; }
 
   // Generate test and print comma-separated data; asize=0 for column headings
-  void TestAndReport(objectId_t asize, long ntrials, std::ostream& csv);
+  virtual void TestAndReport(objectId_t asize, long ntrials, std::ostream& csv);
 
   void CreateTable(objectId_t asize);
-  void UpdateTable(const char* datafile);
+  void UpdateTable(const char* datafile=0);
   void ExerciseTable(long ntrials);
   const UsageTimer& GetUsage() const { return usage; }
 

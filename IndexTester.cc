@@ -51,7 +51,8 @@ void IndexTester::CreateTable(objectId_t asize) {
 // Extend an existing table via subclass, collecting performance statistics
 
 void IndexTester::UpdateTable(const char* datafile) {
-  if (verboseLevel) std::cout << "UpdateTable " << datafile << std::endl;
+  if (verboseLevel)
+    std::cout << "UpdateTable " << (datafile?datafile:"") << std::endl;
 
   usage.zero();
   usage.start();

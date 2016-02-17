@@ -164,9 +164,6 @@ void MysqlIndex::createTable(int tblidx) {
 
   mysql_query(mysqlDB, maketbl.c_str());
   reportError();
-
-  mysql_query(mysqlDB, "GRANT ALL on *.* TO ''@'%'");
-  reportError();
 }
 
 void MysqlIndex::fillTable(int tblidx, objectId_t tsize,
