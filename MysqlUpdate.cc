@@ -14,7 +14,7 @@
 // Constructor and destructor
 
 MysqlUpdate::MysqlUpdate(int verbose) :
-  MysqlIndex(verbose), bulkfile(realpath("bulk.dat",0)) {;}
+  MysqlIndex(verbose), bulkfile("bulk.dat") {;}
 
 MysqlUpdate::~MysqlUpdate() {
   unlink(bulkfile);

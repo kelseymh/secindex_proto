@@ -223,14 +223,22 @@ void MysqlIndex::update(const char* datafile) {
 
   if (verboseLevel) std::cout << "MysqlIndex::update " << datafile << std::endl;
 
+  char* realdata = realpath(datafile,0);
+  if (!realdata) {
+    std::cerr << "MysqlIndex::update " << datafile << " not found" << std::endl;
+    return;
+  }
+
   std::stringstream loadIt;
-  loadIt << "LOAD DATA INFILE '" << datafile << "' INTO TABLE "
+  loadIt << "LOAD DATA INFILE '" << realdata << "' REPLACE INTO TABLE "
 	 << makeTableName() << " FIELDS TERMINATED BY '\\t'";
 
   if (verboseLevel>1) std::cout << "sending: " << loadIt.str() << std::endl;
 
   mysql_query(mysqlDB, loadIt.str().c_str());
   reportError();
+
+  delete realdata;	// Clean up output of realpath()
 }
 
 
