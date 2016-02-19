@@ -23,7 +23,7 @@ public:
 
 protected:
   virtual void create(objectId_t asize);
-  virtual void update(const char* datafile);
+  virtual void update(const char* datafile, int tblidx=-1);
   virtual chunkId_t value(objectId_t objID);
 
   bool connect(const std::string& newDBname="");
@@ -31,8 +31,12 @@ protected:
 
   void createTables();				// One for all, or multiple
   void createTable(int tblidx=-1);		// >= 0 allows data blocks
+
   void fillTable(int tblidx, objectId_t tsize,
 		 objectId_t firstID);
+
+  void createLoadFile(const char* datafile, objectId_t fsize,
+		      objectId_t start, unsigned step) const;
 
   void cleanup();
   void dropTable(int tblidx=-1);		// Drop specified table

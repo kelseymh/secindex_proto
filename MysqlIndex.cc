@@ -4,13 +4,16 @@
 // 20160119  Michael Kelsey
 // 20160204  Extend to support blocking data into smaller tables
 // 20160216  Add support for doing "bulk updates" from flat files
+// 20160218  Use update() loading for initial table setup
 
 #include "MysqlIndex.hh"
 #include <mysql/mysql.h>
+#include <fstream>
 #include <iostream>
 #include <cmath>
 #include <string>
 #include <sstream>
+#include <unistd.h>
 
 
 MysqlIndex::MysqlIndex(int verbose)
@@ -175,53 +178,25 @@ void MysqlIndex::fillTable(int tblidx, objectId_t tsize,
 	      << " " << firstID << std::endl;
   }
 
-  // NOTE:  Each (select 0 union all...) extends the table by a factor of 10
-  int nTens = (int)std::log10(tsize);
-  if (verboseLevel>1)
-    std::cout << " Got " << nTens << " powers of ten" << std::endl;
+  // Load table using a flat data file rather than "exponential select"
+  std::string loadfile = makeTableName(tblidx)+".dat";
 
-  std::stringstream theInsert;
-  theInsert << "INSERT INTO " << makeTableName(tblidx) << " (objectId, chunkId)"
-	    << " SELECT @row := @row + " << indexStep << " AS row, 0 FROM \n";
-  for (int iTen=0; iTen < nTens; iTen++) {
-    theInsert << "(SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL"
-	      << " SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL"
-	      << " SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL"
-	      << " SELECT 9) t" << iTen << ", \n";
-  }
-  
-  // Do a few extras at the end to get the desired DB size
-  int nExtra = (int)std::ceil((double)tsize / pow(10., nTens));
-  if (verboseLevel>1)
-    std::cout << " Got extra factor of " << nExtra << std::endl;
-
-  if (nExtra > 1) {
-    theInsert << "(";
-    for (int iExtra=0; iExtra < nExtra; iExtra++) {
-      theInsert << " SELECT " << iExtra;
-      if (iExtra < nExtra-1) theInsert << " UNION ALL";
-    }
-    theInsert << ") t" << nTens << ", \n";
-  }
-  
-  // Start the ball rolling
-  theInsert << "(SELECT @row:=" << firstID << ") t" << nTens+1;
-
-  if (verboseLevel>1)
-    std::cout << "sending: " << theInsert.str() << std::endl;
-
-  mysql_query(mysqlDB, theInsert.str().c_str());
-  reportError();
+  createLoadFile(loadfile.c_str(), tsize, firstID, indexStep);
+  update(loadfile.c_str(), tblidx);
+  unlink(loadfile.c_str());		// Delete input file when done
 }
 
 
 // Insert contents of external file in one action
 // FIXME:  This currently assumes single giant table, no splitting!
 
-void MysqlIndex::update(const char* datafile) {
+void MysqlIndex::update(const char* datafile, int tblidx) {
   if (!datafile) return;		// No external file specified
 
-  if (verboseLevel) std::cout << "MysqlIndex::update " << datafile << std::endl;
+  if (verboseLevel) {
+    std::cout << "MysqlIndex::update " << datafile << " to " << tblidx
+	      << std::endl;
+  }
 
   char* realdata = realpath(datafile,0);
   if (!realdata) {
@@ -231,7 +206,7 @@ void MysqlIndex::update(const char* datafile) {
 
   std::stringstream loadIt;
   loadIt << "LOAD DATA INFILE '" << realdata << "' REPLACE INTO TABLE "
-	 << makeTableName() << " FIELDS TERMINATED BY '\\t'";
+	 << makeTableName(tblidx) << " FIELDS TERMINATED BY '\\t'";
 
   if (verboseLevel>1) std::cout << "sending: " << loadIt.str() << std::endl;
 
@@ -319,4 +294,24 @@ void MysqlIndex::dropTable(int tblidx) {
 
   mysql_query(mysqlDB, droptbl.c_str());
   reportError();
+}
+
+
+// Construct a flat file to use for loading into table
+
+void MysqlIndex::createLoadFile(const char* datafile, objectId_t fsize,
+				objectId_t start, unsigned step) const {
+  if (!datafile) return;			// No filename, no file
+
+  if (verboseLevel) {
+    std::cout << "MysqlIndex::createLoadFile " << datafile << " " << fsize
+	      << " entries from " << start << " by " << step << std::endl;
+  }
+
+  std::ofstream bulkdata(datafile, std::ios::trunc);
+  for (objectId_t i=0; i<fsize; i++) {
+    bulkdata << start+i*step << "\t" << 5 << std::endl;
+  }
+
+  bulkdata.close();
 }

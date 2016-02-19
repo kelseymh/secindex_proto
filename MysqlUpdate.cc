@@ -27,14 +27,9 @@ void MysqlUpdate::create(objectId_t asize) {
   MysqlIndex::create(asize);
 
   // Create the 10% bulk-update file here, with interleaving
-  unsigned shortStep = std::min(indexStep/3U, 1U);
+  unsigned shortStep = std::max(indexStep/3U, 1U);
 
-  objectId_t bulksize = asize / 10;
-  std::ofstream bulkdata(bulkfile, std::ios::trunc);
-  for (objectId_t i=0; i<bulksize; i++) {
-    bulkdata << i*shortStep << "\t" << 5 << std::endl;
-  }
-  bulkdata.close();
+  createLoadFile(bulkfile, asize/10, 0ULL, shortStep);
 }
 
 
@@ -56,8 +51,8 @@ void MysqlUpdate::TestAndReport(objectId_t asize, long /*ntrials*/,
 
   UpdateTable(bulkfile);
   csv << ", " << asize/10 << ", " << GetUsage().cpuTime()
-      << ", " << GetUsage().elapsed() << ", " << GetUsage().maxMemory()/1e6 << ", "
-      << GetUsage().pageFaults() << ", " << GetUsage().ioInput()
+      << ", " << GetUsage().elapsed() << ", " << GetUsage().maxMemory()/1e6
+      << ", " << GetUsage().pageFaults() << ", " << GetUsage().ioInput()
       << std::endl;
 }
 
