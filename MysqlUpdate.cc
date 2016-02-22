@@ -29,7 +29,7 @@ void MysqlUpdate::create(objectId_t asize) {
   // Create the 10% bulk-update file here, with interleaving
   unsigned shortStep = std::max(indexStep/3U, 1U);
 
-  createLoadFile(bulkfile, asize/10, 0ULL, shortStep);
+  createLoadFile(bulkfile, 1e7, 0ULL, shortStep);
 }
 
 
@@ -40,17 +40,18 @@ void MysqlUpdate::TestAndReport(objectId_t asize, long /*ntrials*/,
 				std::ostream& csv) {
   if (asize == 0) {		// Special case: print column headings
     csv << "Type, Size (1e6), Init CPU (s), Init Clock (s)"
-	<< ", Accesses (1e6), Run CPU (s), Run Clock (s)"
+	<< ", Update (1e6), Run CPU (s), Run Clock (s)"
 	<< ", Memory (MB), Page fault, Input op" << std::endl;
     return;
   }
 
   CreateTable(asize);
   csv << GetName() << ", " << tableSize/1e6 << ", "
-      << GetUsage().cpuTime() << ", " << GetUsage().elapsed();
+      << GetUsage().cpuTime() << ", " << GetUsage().elapsed()
+      << std::flush;
 
-  UpdateTable(bulkfile);
-  csv << ", " << asize/10 << ", " << GetUsage().cpuTime()
+  UpdateTable(bulkfile);	// Fixed 10M entry bulk-update file
+  csv << ", " << 10 << ", " << GetUsage().cpuTime()
       << ", " << GetUsage().elapsed() << ", " << GetUsage().maxMemory()/1e6
       << ", " << GetUsage().pageFaults() << ", " << GetUsage().ioInput()
       << std::endl;

@@ -98,7 +98,8 @@ void IndexTester::TestAndReport(objectId_t asize, long ntrials,
 
   CreateTable(asize);
   csv << tableName << ", " << tableSize/1e6 << ", "
-      << usage.cpuTime() << ", " << usage.elapsed();
+      << usage.cpuTime() << ", " << usage.elapsed()
+      << std::flush;
 
   ExerciseTable(ntrials);
   csv << ", " << lastTrials/1e6 << ", " << usage.cpuTime()
