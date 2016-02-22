@@ -23,7 +23,7 @@ public:
 
 protected:
   virtual void create(objectId_t asize);
-  virtual void update(const char* datafile, int tblidx=-1);
+  virtual void update(const char* datafile);
   virtual chunkId_t value(objectId_t objID);
 
   bool connect(const std::string& newDBname="");
@@ -34,6 +34,8 @@ protected:
 
   void fillTable(int tblidx, objectId_t tsize,
 		 objectId_t firstID);
+  
+  void updateTable(const char* datafile, int tblidx=-1);
 
   void createLoadFile(const char* datafile, objectId_t fsize,
 		      objectId_t start, unsigned step) const;

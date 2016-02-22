@@ -182,7 +182,7 @@ void MysqlIndex::fillTable(int tblidx, objectId_t tsize,
   std::string loadfile = makeTableName(tblidx)+".dat";
 
   createLoadFile(loadfile.c_str(), tsize, firstID, indexStep);
-  update(loadfile.c_str(), tblidx);
+  updateTable(loadfile.c_str(), tblidx);
   unlink(loadfile.c_str());		// Delete input file when done
 }
 
@@ -190,12 +190,18 @@ void MysqlIndex::fillTable(int tblidx, objectId_t tsize,
 // Insert contents of external file in one action
 // FIXME:  This currently assumes single giant table, no splitting!
 
-void MysqlIndex::update(const char* datafile, int tblidx) {
+void MysqlIndex::update(const char* datafile) {
+  updateTable(datafile, (usingMultipleTables()?0:-1));
+}
+
+// Insert contents of external file into specified table block
+
+void MysqlIndex::updateTable(const char* datafile, int tblidx) {
   if (!datafile) return;		// No external file specified
 
   if (verboseLevel) {
-    std::cout << "MysqlIndex::update " << datafile << " to " << tblidx
-	      << std::endl;
+    std::cout << "MysqlIndex::updateTable " << datafile
+	      << " to table " << tblidx << std::endl;
   }
 
   char* realdata = realpath(datafile,0);
