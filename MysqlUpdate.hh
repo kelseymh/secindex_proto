@@ -20,7 +20,7 @@ protected:
   // Do base class database creation, then construct bulk-update file
   virtual void create(objectId_t asize);
 
-  virtual void update(const char* datafile=0) {
+  virtual void update(const char* datafile) {
     MysqlIndex::update(datafile?datafile:bulkfile);
   }
 

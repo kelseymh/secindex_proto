@@ -7,13 +7,15 @@
 // 20160218  Use update() loading for initial table setup
 
 #include "MysqlIndex.hh"
-#include <mysql/mysql.h>
+#include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iostream>
-#include <cmath>
-#include <string>
+#include <mysql/mysql.h>
 #include <sstream>
+#include <string>
 #include <unistd.h>
+#include <vector>
 
 
 MysqlIndex::MysqlIndex(int verbose)
@@ -22,6 +24,16 @@ MysqlIndex::MysqlIndex(int verbose)
 
 MysqlIndex::~MysqlIndex() {
   cleanup();
+}
+
+
+// Transmit query string to MySQL server, report error if any
+
+void MysqlIndex::sendQuery(const std::string& query) const {
+  if (verboseLevel>1) std::cout << "sending: " << query << std::endl;
+
+  mysql_query(mysqlDB, query.c_str());
+  reportError();
 }
 
 
@@ -45,6 +57,22 @@ int MysqlIndex::numberOfTables() const {
 }
 
 
+// Map input object ID to lookup table block
+
+int MysqlIndex::chooseTable(objectId_t objID) const {
+  if (!usingMultipleTables()) return -1;	// Single table for all data
+
+  // If there are no table ranges, assume sequential indices for test
+  if (blockStart.empty()) return (objID/indexStep/blockSize);
+
+  // Get table which should contain specified objectID
+  std::vector<objectId_t>::const_iterator lb =
+    std::lower_bound(blockStart.begin(), blockStart.end(), objID);
+
+  return (lb - blockStart.begin());
+}
+
+
 // Construct unique table names for each data block
 
 std::string MysqlIndex::makeTableName(int tblidx) const {
@@ -57,26 +85,23 @@ std::string MysqlIndex::makeTableName(int tblidx) const {
 }
 
 
+
 // Create and populate secondary index from scratch
 
 void MysqlIndex::create(objectId_t asize) {
   if (!connect(dbname) || !mysqlDB) return;	// Avoid unnecessary work
 
   tableSize = asize;		// Store for use in filling and querying
-  
+
+  blockStart.clear();
   accessDatabase();
   createTables();
 }
 
 chunkId_t MysqlIndex::value(objectId_t objID) {
-  if (!mysqlDB) return 0xdeadbeef;		// Avoid unnecessary work
-
-  MYSQL_RES* result = findObjectID(objID);
-  if (!result) return 0xdeadbeef;
-
+  MYSQL_RES* result = findObjectID(objID);	// NULL handled automatically
   chunkId_t chunk = extractChunk(result);
-
-  mysql_free_result(result);		// Clean up before exiting
+  mysql_free_result(result);			// Clean up before exiting
 
   return chunk;
 }
@@ -97,8 +122,8 @@ bool MysqlIndex::connect(const std::string& newDBname) {
   // connect to mysql server, no particular database
   mysqlDB = mysql_init(NULL);
 
-  if (!mysql_real_connect(mysqlDB,"127.0.0.1","root","changeme",
-			  "",13306,NULL,0)) {
+  if (!mysql_real_connect(mysqlDB, "127.0.0.1", "root", "changeme",
+			  "", 13306, NULL, 0)) {
     std::cerr << mysql_error(mysqlDB) << std::endl;
     mysql_close(mysqlDB);
     mysqlDB = 0;
@@ -108,22 +133,13 @@ bool MysqlIndex::connect(const std::string& newDBname) {
   return true;
 }
 
-void MysqlIndex::accessDatabase() {
+void MysqlIndex::accessDatabase() const {
   if (!mysqlDB) return;				// Avoid unnecessary work
 
   if (verboseLevel) std::cout << "MysqlIndex::accessDatabase" << std::endl;
 
-  std::string makedb = "CREATE DATABASE "+dbname;
-  if (verboseLevel>1) std::cout << "sending: " << makedb << std::endl;
-
-  mysql_query(mysqlDB, makedb.c_str());
-  reportError();
-
-  std::string usedb = "USE "+dbname;
-  if (verboseLevel>1) std::cout << "sending: " << usedb << std::endl;
-
-  mysql_query(mysqlDB, usedb.c_str());
-  reportError();
+  sendQuery("CREATE DATABASE "+dbname);
+  sendQuery("USE "+dbname);
 }
 
 void MysqlIndex::createTables() {
@@ -141,19 +157,31 @@ void MysqlIndex::createTables() {
 		<< blockSize << " entries" << std::endl;
     }
 
-    objectId_t tsize = blockSize;	// Last table may be short
+    objectId_t tsize = blockSize;		// Last table may be short
     for (int itbl=0; itbl<nTables; itbl++) {
       if (itbl == nTables-1) tsize = tableSize - (nTables-1)*blockSize;
       createTable(itbl);
-      fillTable(itbl, tsize, itbl*blockSize);
+      fillTable(itbl, tsize, itbl*blockSize*indexStep);
     }
   } else {
     createTable(-1);				// One massive table
     fillTable(-1, tableSize, 0);
   }
+
+  if (verboseLevel>1) {
+    std::cout << numberOfTables() << " tables created";
+    if (usingMultipleTables()) {
+      std::cout << " with starting indices";
+      for (size_t i=0; i<numberOfTables(); i++) {
+	if (i%8 == 0) std::cout << std::endl;
+	std::cout << " " << blockStart[i];
+      }
+    }
+    std::cout << std::endl;
+  }
 }
 
-void MysqlIndex::createTable(int tblidx) {
+void MysqlIndex::createTable(int tblidx) const {
   if (!mysqlDB) return;				// Avoid unnecessary work
 
   if (verboseLevel)
@@ -162,11 +190,7 @@ void MysqlIndex::createTable(int tblidx) {
   std::string maketbl = "CREATE TABLE " + makeTableName(tblidx)
     + " (objectId BIGINT NOT NULL PRIMARY KEY, chunkId INT NOT NULL)"
     + " ENGINE='InnoDB'";
-
-  if (verboseLevel>1) std::cout << "sending: " << maketbl << std::endl;
-
-  mysql_query(mysqlDB, maketbl.c_str());
-  reportError();
+  sendQuery(maketbl);
 }
 
 void MysqlIndex::fillTable(int tblidx, objectId_t tsize,
@@ -184,14 +208,57 @@ void MysqlIndex::fillTable(int tblidx, objectId_t tsize,
   createLoadFile(loadfile.c_str(), tsize, firstID, indexStep);
   updateTable(loadfile.c_str(), tblidx);
   unlink(loadfile.c_str());		// Delete input file when done
+
+  // Get table range and add to range list
+  if (tblidx < 0) return;		// Single table doesn't use range
+
+  objectId_t minID=0ULL, maxID=0ULL;	// MaxID is ignored below
+  getObjectRange(tblidx, minID, maxID);
+
+  // Extend list of table ranges for later lookup
+  size_t absidx = (size_t)tblidx;		// Casting for convenience below
+  if (absidx < blockStart.size()) {		// Replace previous range
+    blockStart[absidx] = minID;
+  } else if (absidx == blockStart.size()) {	// Next in sequence
+    blockStart.push_back(minID);
+  } else {				// Fill up to this table block index
+    for (size_t i=blockStart.size(); i<absidx; i++) {
+      blockStart.push_back(minID);
+    }
+  }
+}
+
+
+// Query specified table to get minimum and maximum keys
+
+void MysqlIndex::getObjectRange(int tblidx, objectId_t &minID,
+				objectId_t &maxID) const {
+  if (!mysqlDB) { 				// Avoid unnecessary work
+    minID = maxID = 0;
+    return;
+  }
+
+  if (verboseLevel) 
+    std::cout << "MysqlIndex::getTableRange " << tblidx << std::endl;
+
+  sendQuery("SELECT MIN(objectId), MAX(objectId) FROM "+makeTableName(tblidx));
+  MYSQL_RES *result = getQueryResult();
+  minID = extractObject(result,0);
+  maxID = extractObject(result,1);
+  mysql_free_result(result);  
 }
 
 
 // Insert contents of external file in one action
-// FIXME:  This currently assumes single giant table, no splitting!
 
 void MysqlIndex::update(const char* datafile) {
-  updateTable(datafile, (usingMultipleTables()?0:-1));
+  if (!usingMultipleTables()) {		// Single table requires no splitting
+    updateTable(datafile, -1);
+    return;
+  }
+
+  // FIXME:  Need to scan input and split at table boundaries
+  updateTable(datafile, 0);
 }
 
 // Insert contents of external file into specified table block
@@ -204,7 +271,7 @@ void MysqlIndex::updateTable(const char* datafile, int tblidx) {
 	      << " to table " << tblidx << std::endl;
   }
 
-  char* realdata = realpath(datafile,0);
+  char* realdata = realpath(datafile,0);	// Returns new pointer!
   if (!realdata) {
     std::cerr << "MysqlIndex::update " << datafile << " not found" << std::endl;
     return;
@@ -213,28 +280,26 @@ void MysqlIndex::updateTable(const char* datafile, int tblidx) {
   std::stringstream loadIt;
   loadIt << "LOAD DATA INFILE '" << realdata << "' REPLACE INTO TABLE "
 	 << makeTableName(tblidx) << " FIELDS TERMINATED BY '\\t'";
+  sendQuery(loadIt.str());
 
-  if (verboseLevel>1) std::cout << "sending: " << loadIt.str() << std::endl;
-
-  mysql_query(mysqlDB, loadIt.str().c_str());
-  reportError();
-
-  delete realdata;	// Clean up output of realpath()
+  delete realdata;				// Clean up output of realpath()
 }
 
 
-// Do MySQL query to extract object/chunk pair from correct table
+// Do MySQL query to extract chunk for given object from correct table
 
-MYSQL_RES* MysqlIndex::findObjectID(objectId_t objID) {
+MYSQL_RES* MysqlIndex::findObjectID(objectId_t objID) const {
+  if (!mysqlDB) return (MYSQL_RES*)0;		// Avoid unnecessary work
+
   std::stringstream lookup;
-  lookup << "SELECT chunkId FROM " << dbname << "."
-	 << makeTableName(chooseTable(objID)) << " WHERE objectId=" << objID;
-  
-  if (verboseLevel>1) std::cout << "sending: " << lookup.str() << std::endl;
-  
-  mysql_query(mysqlDB, lookup.str().c_str());
-  reportError();
-  
+  lookup << "SELECT chunkId FROM " << makeTableName(chooseTable(objID))
+	 << " WHERE objectId=" << objID;
+
+  sendQuery(lookup.str());
+  return getQueryResult();
+}
+
+MYSQL_RES* MysqlIndex::getQueryResult() const {
   MYSQL_RES *result = mysql_store_result(mysqlDB);
 
   if (result && mysql_num_rows(result)>0) {
@@ -242,25 +307,39 @@ MYSQL_RES* MysqlIndex::findObjectID(objectId_t objID) {
       std::cout << "got " << mysql_num_rows(result) << " rows, with "
 		<< mysql_num_fields(result) << " columns" << std::endl;
   } else {
-    std::cerr << "error selecting objectID " << objID << "\n";
     reportError();
+    mysql_free_result(result);		// Discard invalid result
+    result = 0;    
   }
 
-  return result;
+  return result;			// Transfers ownership to client
 }
 
 
-// Parse query result to get chunk ID (there should be only one!)
+// Parse query result to get object or chunk ID (there should be only one!)
 
-chunkId_t MysqlIndex::extractChunk(MYSQL_RES* result) {
+chunkId_t MysqlIndex::extractChunk(MYSQL_RES* result, size_t irow) const {
   if (!result) return 0xdeadbeef;		// Avoid unnecessary work
 
   MYSQL_ROW row = mysql_fetch_row(result);	// There should be only one!
   if (!row) return 0xdeadbeef;
 
-  if (verboseLevel>1) std::cout << "first result: " << row[0] << std::endl;
+  if (verboseLevel>1)
+    std::cout << "result " << irow << ": " << row[irow] << std::endl;
 
-  return strtoul(row[0], 0, 0);		// Everything comes back as strings
+  return strtoul(row[irow], 0, 0);	// Everything comes back as strings
+}
+
+objectId_t MysqlIndex::extractObject(MYSQL_RES* result, size_t irow) const {
+  if (!result) return 0;			// Avoid unnecessary work
+
+  MYSQL_ROW row = mysql_fetch_row(result);	// There should be only one!
+  if (!row) return 0;
+
+  if (verboseLevel>1)
+    std::cout << "result " << irow << ": " << row[irow] << std::endl;
+
+  return strtoull(row[irow], 0, 0);	// Everything comes back as strings
 }
 
 
@@ -271,6 +350,10 @@ void MysqlIndex::cleanup() {
 
   if (verboseLevel) std::cout << "MysqlIndex::cleanup" << std::endl;
 
+  // FIXME:  Why did this go into an infinite loop when empty()?
+  blockStart.clear();		// Discard index ranges for block tables
+
+
   if (usingMultipleTables()) {
     for (int itbl=0; itbl<numberOfTables(); itbl++) {
       dropTable(itbl);
@@ -279,27 +362,19 @@ void MysqlIndex::cleanup() {
     dropTable(-1);
   }
 
-  std::string dropdb = "DROP DATABASE " + dbname;
-  if (verboseLevel>1) std::cout << "sending: " << dropdb << std::endl;
-
-  mysql_query(mysqlDB, dropdb.c_str());
-  reportError();
+  sendQuery("DROP DATABASE "+dbname);
 
   mysql_close(mysqlDB);
   mysqlDB = 0;
 }
 
-void MysqlIndex::dropTable(int tblidx) {
+void MysqlIndex::dropTable(int tblidx) const {
   if (!mysqlDB) return;				// Avoid unnecessary work
   
   if (verboseLevel>1)
     std::cout << "MysqlIndex::dropTable " << tblidx << std::endl;
-  
-  std::string droptbl = "DROP TABLE " + makeTableName(tblidx);
-  if (verboseLevel>1) std::cout << "sending: " << droptbl << std::endl;
 
-  mysql_query(mysqlDB, droptbl.c_str());
-  reportError();
+  sendQuery("DROP TABLE "+makeTableName(tblidx));
 }
 
 

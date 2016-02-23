@@ -103,6 +103,8 @@ MapIndex.cc FileIndex.cc \
 MemCDIndex.cc XrootdSimple.cc \
 RocksIndex.cc MysqlIndex.cc : IndexTester.hh
 
+MysqlUpdate.cc : MysqlIndex.hh
+
 $(BINSRC) : IndexTester.hh UsageTimer.hh
 $(LIBSRC) : %.cc:%.hh
 

@@ -26,7 +26,7 @@ MysqlUpdate::~MysqlUpdate() {
 void MysqlUpdate::create(objectId_t asize) {
   MysqlIndex::create(asize);
 
-  // Create the 10% bulk-update file here, with interleaving
+  // Create the 10M bulk-update file here, with interleaving
   unsigned shortStep = std::max(indexStep/3U, 1U);
 
   createLoadFile(bulkfile, 1e7, 0ULL, shortStep);

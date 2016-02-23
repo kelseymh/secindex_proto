@@ -10,6 +10,7 @@
 #include "IndexTester.hh"
 #include <mysql/mysql.h>	/* Needed for MYSQL typedef below */
 #include <string>
+#include <vector>
 
 
 class MysqlIndex : public IndexTester {
@@ -27,24 +28,25 @@ protected:
   virtual chunkId_t value(objectId_t objID);
 
   bool connect(const std::string& newDBname="");
-  void accessDatabase();
+  void accessDatabase() const;
 
   void createTables();				// One for all, or multiple
-  void createTable(int tblidx=-1);		// >= 0 allows data blocks
+  void createTable(int tblidx=-1) const;	// >= 0 allows data blocks
 
   void fillTable(int tblidx, objectId_t tsize,
 		 objectId_t firstID);
   
   void updateTable(const char* datafile, int tblidx=-1);
 
+  void getObjectRange(int tblidx, objectId_t &minID, objectId_t &maxID) const;
+
   void createLoadFile(const char* datafile, objectId_t fsize,
 		      objectId_t start, unsigned step) const;
 
   void cleanup();
-  void dropTable(int tblidx=-1);		// Drop specified table
+  void dropTable(int tblidx=-1) const;		// Drop specified table
 
-  MYSQL_RES* findObjectID(objectId_t objID);	// Does MySQL query
-  chunkId_t extractChunk(MYSQL_RES* result);	// Parses result
+  MYSQL_RES* findObjectID(objectId_t objID) const;  // Get chunk for given ID
 
   // Wrapper functions to handle multiple tables for data blocks
 
@@ -54,20 +56,26 @@ protected:
 
   int numberOfTables() const;			// Total number of data blocks
 
-  int chooseTable(objectId_t objID) const {	// Get table for ID
-    return (usingMultipleTables() ? (objID/blockSize) : -1);
-  }
+  int chooseTable(objectId_t objID) const;	// Identify block table for ID
 
   std::string makeTableName(int tblidx=-1) const;	// Unique block names
 
+  // Wrapper functions to generate and process queries
+
+  void sendQuery(const std::string& query) const;  // Transmit query to server
   void reportError() const;			// Print MySQL message if any
+  MYSQL_RES* getQueryResult() const;		// Result container w/err check
+
+  chunkId_t extractChunk(MYSQL_RES* result, size_t irow=0) const;
+  objectId_t extractObject(MYSQL_RES* result, size_t irow=0) const;
 
 private:
   MYSQL *mysqlDB;
   std::string dbname;
   std::string table;
 
-  objectId_t blockSize;		// For dividing overly large tables
+  objectId_t blockSize;			// For dividing overly large tables
+  std::vector<objectId_t> blockStart;	// Lowest objectID in each table block
 };
 
 #endif	/* MYSQL_INDEX_HH */
