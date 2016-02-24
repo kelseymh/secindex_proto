@@ -30,13 +30,11 @@ protected:
   bool connect(const std::string& newDBname="");
   void accessDatabase() const;
 
-  void createTables();				// One for all, or multiple
+  void createTables() const;			// One for all, or multiple
   void createTable(int tblidx=-1) const;	// >= 0 allows data blocks
+  void fillTable(int tblidx, objectId_t tsize, objectId_t firstID) const;
 
-  void fillTable(int tblidx, objectId_t tsize,
-		 objectId_t firstID);
-  
-  void updateTable(const char* datafile, int tblidx=-1);
+  void updateTable(const char* datafile, int tblidx=-1) const;
 
   void getObjectRange(int tblidx, objectId_t &minID, objectId_t &maxID) const;
 
@@ -55,6 +53,8 @@ protected:
   }
 
   int numberOfTables() const;			// Total number of data blocks
+
+  void fillTableRanges();			// Populate ID range lookup
 
   int chooseTable(objectId_t objID) const;	// Identify block table for ID
 

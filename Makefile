@@ -97,13 +97,12 @@ mysql-update.cc                       : MysqlIndex.hh
 index-performance.cc                  : MapIndex.hh
 
 IndexTester.hh : UsageTimer.hh
+MysqlUpdate.hh : MysqlIndex.hh
 
-ArrayIndex.cc BlockArrays.cc \
-MapIndex.cc FileIndex.cc \
-MemCDIndex.cc XrootdSimple.cc \
-RocksIndex.cc MysqlIndex.cc : IndexTester.hh
-
-MysqlUpdate.cc : MysqlIndex.hh
+ArrayIndex.hh BlockArrays.hh \
+MapIndex.hh FileIndex.hh \
+MemCDIndex.hh XrootdSimple.hh \
+RocksIndex.hh MysqlIndex.hh : IndexTester.hh
 
 $(BINSRC) : IndexTester.hh UsageTimer.hh
 $(LIBSRC) : %.cc:%.hh

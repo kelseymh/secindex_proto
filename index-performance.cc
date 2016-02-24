@@ -89,7 +89,11 @@ IndexTester* getTester(const string& type) {
 #endif
   case 's': return new MapIndex; break;
 #ifdef HAS_MYSQL
-  case 'u': return new MysqlUpdate; break;
+  case 'u': {
+    MysqlUpdate* umysql = new MysqlUpdate;
+    umysql->setTableSize(4e6);		// Small blocks to test bulk split
+    return umysql;
+  } break;
 #endif
 #ifdef HAS_XROOTD
   case 'x': return new XrootdSimple; break;
@@ -133,12 +137,13 @@ int main(int argc, char* argv[]) {
   IndexTester* tester = getTester(type);
   if (!tester) ::exit(2);
 
-  string csvName = tester->GetName();
-  csvName += ".csv";
+  tester->SetIndexSpacing(10);		// Sparsify objectIDs where possible
 
-  // Set up comma-separated data
-  std::ofstream csv(csvName.c_str());
-  tester->TestAndReport(0, 0, csv);
+  string csvName = tester->GetName();	// Set up comma-separated data
+  csvName += ".csv";
+  ofstream csv(csvName.c_str());
+
+  tester->TestAndReport(0, 0, csv);	// Write out column headings
 
   // Loop over table sizes logarithmically (1, 3, 10, 30, etc.)
   ULL testsize = minsize;
