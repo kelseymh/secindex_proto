@@ -4,6 +4,7 @@
 //
 // 20151024  Michael Kelsey
 // 20160217  Force sequential indices, overriding user setting
+// 20160224  Move destructor action to cleanup() function
 
 #include "BlockArrays.hh"
 
@@ -13,7 +14,7 @@
 void BlockArrays::create(objectId_t asize) {
   SetIndexSpacing(1);			// Ensure that indices are dense
 
-  if (blocks) clearBlocks();		// Avoid memory leaks
+  if (blocks) cleanup();		// Avoid memory leaks
   blockCount = 0;
   
   if (asize==0) return;
@@ -35,13 +36,15 @@ chunkId_t BlockArrays::value(objectId_t index) {
 
 
 // Delete array block-by-block first, then the top level
-void BlockArrays::clearBlocks() {
+
+void BlockArrays::cleanup() {
   if (blocks) {
     for (unsigned i=0; i<blockCount; i++) {
       delete[] blocks[i];
       blocks[i] = 0;
     }
     delete[] blocks;
+    blocks = 0;
   }
   blockCount = 0;
 }

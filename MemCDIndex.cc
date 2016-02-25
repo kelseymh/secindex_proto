@@ -5,6 +5,7 @@
 // 20151104  Bug fix:  Must terminate execvp() arg list with null pointer
 // 20151118  Add diagnostic messages for all memcached actions
 // 20160217  Support sparse indexing into map
+// 20160224  Move destructor action to cleanup() function
 
 #include "MemCDIndex.hh"
 #include <libmemcached/memcached.h>
@@ -23,7 +24,7 @@ using namespace std;
 MemCDIndex::MemCDIndex(int verbose)
   : IndexTester("memcached",verbose), mcdsv(0), memcd(0) {;}
 
-MemCDIndex::~MemCDIndex() {
+void MemCDIndex::cleanup() {
   if (mcdsv) killServer();
   if (memcd) killClient();
 }

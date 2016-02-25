@@ -7,6 +7,7 @@
 // 20151113  Instead of "localhost", use call to gethostname() to get string
 // 20151116  Remove debugging option from XRootD services.
 // 20160217  Suppress sparse indexing for now, requires invasive changes
+// 20160224  Move destructor action to cleanup() function
 
 #include "XrootdSimple.hh"
 #include "XrdCl/XrdClFile.hh"
@@ -37,6 +38,10 @@ XrootdSimple::XrootdSimple(int verbose)
 }
 
 XrootdSimple::~XrootdSimple() {
+  cleanup();
+}
+
+void XrootdSimple::cleanup() {
   killServer();
   killManager();
   //*** deleteTempFiles();	// Do we really want to do this?

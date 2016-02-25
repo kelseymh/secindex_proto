@@ -8,6 +8,7 @@
 // 20151113  Add accessors for verbosity and name
 // 20160216  Add interface and optional subclass function for bulk updates
 // 20160217  FINALLY:  Provide typedefs for "objectId_t" and "chunkId_t"
+// 20160224  Add protected cleanup() function to be used by subclasses
 
 #include "UsageTimer.hh"
 #include <iosfwd>
@@ -20,7 +21,7 @@ typedef unsigned int chunkId_t;
 class IndexTester {
 public:
   IndexTester(const char* name, int verbose=0);
-  virtual ~IndexTester() {;}
+  virtual ~IndexTester() { cleanup(); }
 
   void SetVerboseLevel(int verbose) { verboseLevel = verbose; }
   int GetVerboseLevel() const { return verboseLevel; }
@@ -42,6 +43,8 @@ protected:
   // Subclass must implement their own specific table creator and accessor
   virtual void create(objectId_t asize) = 0;
   virtual void update(const char* datafile) {;}		// May be unimplemented
+  virtual void cleanup() {;}				// May be unimplemented
+
   virtual chunkId_t value(objectId_t index) = 0;
 
   objectId_t randomIndex() const;

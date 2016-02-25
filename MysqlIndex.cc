@@ -19,12 +19,33 @@
 using namespace std;
 
 
+// Constructor and destructor
+
 MysqlIndex::MysqlIndex(int verbose)
   : IndexTester("mysql",verbose), mysqlDB(0), dbname("SecIdx"),
     table("chunks"), blockSize(0ULL) {;}
 
-MysqlIndex::~MysqlIndex() {
-  cleanup();
+void MysqlIndex::cleanup() {
+  if (!mysqlDB) return;				// Avoid unnecessary work
+
+  if (verboseLevel) cout << "MysqlIndex::cleanup" << endl;
+
+  // FIXME:  Why did this go into an infinite loop when empty()?
+  blockStart.clear();		// Discard index ranges for block tables
+
+
+  if (usingMultipleTables()) {
+    for (int itbl=0; itbl<numberOfTables(); itbl++) {
+      dropTable(itbl);
+    }
+  } else {
+    dropTable(-1);
+  }
+
+  sendQuery("DROP DATABASE "+dbname);
+
+  mysql_close(mysqlDB);
+  mysqlDB = 0;
 }
 
 
@@ -410,29 +431,6 @@ objectId_t MysqlIndex::extractObject(MYSQL_RES* result, size_t irow) const {
 
 
 // Discard tables and database at end of job
-
-void MysqlIndex::cleanup() {
-  if (!mysqlDB) return;				// Avoid unnecessary work
-
-  if (verboseLevel) cout << "MysqlIndex::cleanup" << endl;
-
-  // FIXME:  Why did this go into an infinite loop when empty()?
-  blockStart.clear();		// Discard index ranges for block tables
-
-
-  if (usingMultipleTables()) {
-    for (int itbl=0; itbl<numberOfTables(); itbl++) {
-      dropTable(itbl);
-    }
-  } else {
-    dropTable(-1);
-  }
-
-  sendQuery("DROP DATABASE "+dbname);
-
-  mysql_close(mysqlDB);
-  mysqlDB = 0;
-}
 
 void MysqlIndex::dropTable(int tblidx) const {
   if (!mysqlDB) return;				// Avoid unnecessary work

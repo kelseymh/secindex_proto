@@ -2,7 +2,7 @@
 // MysqlUpdate.hh -- Exercise performance of MysqlDB with bulk updating
 //
 // 20160217  Michael Kelsey -- sets bulk data file automatically
-// 20160224  Add parameter for size of bulk-update file
+// 20160224  Add parameter for size of bulk-update file, cleanup() function
 
 #include "MysqlUpdate.hh"
 #include "UsageTimer.hh"
@@ -17,7 +17,8 @@
 MysqlUpdate::MysqlUpdate(int verbose) :
   MysqlIndex(verbose), bulkfile("bulk.dat"), bulksize(1e7) {;}
 
-MysqlUpdate::~MysqlUpdate() {
+void MysqlUpdate::cleanup() {
+  MysqlIndex::cleanup();	// Will this work in destructor?
   unlink(bulkfile);
 }
 
@@ -46,16 +47,20 @@ void MysqlUpdate::TestAndReport(objectId_t asize, long usize,
     return;
   }
 
+  // For multiple tables, create an update file which spans multiple blocks
+  setUpdateSize(usingMultipleTables() ? (objectId_t)(2.5*blockSize)
+		: (objectId_t)usize);
+
   CreateTable(asize);
   csv << GetName() << ", " << tableSize/1e6 << ", "
       << GetUsage().cpuTime() << ", " << GetUsage().elapsed()
       << std::flush;
 
-  setUpdateSize(usize);
   UpdateTable(bulkfile);
   csv << ", " << bulksize/1e6 << ", " << GetUsage().cpuTime()
       << ", " << GetUsage().elapsed() << ", " << GetUsage().maxMemory()/1e6
       << ", " << GetUsage().pageFaults() << ", " << GetUsage().ioInput()
       << std::endl;
-}
 
+  cleanup();			// Remove job-specific data before next pass
+}

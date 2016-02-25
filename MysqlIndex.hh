@@ -16,7 +16,7 @@
 class MysqlIndex : public IndexTester {
 public:
   MysqlIndex(int verbose=0);
-  virtual ~MysqlIndex();
+  virtual ~MysqlIndex() { cleanup(); }
 
 public:
   // Call this function before running to create multiple smaller tables
@@ -26,6 +26,7 @@ protected:
   virtual void create(objectId_t asize);
   virtual void update(const char* datafile);
   virtual chunkId_t value(objectId_t objID);
+  virtual void cleanup();
 
   bool connect(const std::string& newDBname="");
   void accessDatabase() const;
@@ -41,7 +42,6 @@ protected:
   void createLoadFile(const char* datafile, objectId_t fsize,
 		      objectId_t start, unsigned step) const;
 
-  void cleanup();
   void dropTable(int tblidx=-1) const;		// Drop specified table
 
   MYSQL_RES* findObjectID(objectId_t objID) const;  // Get chunk for given ID
@@ -69,7 +69,7 @@ protected:
   chunkId_t extractChunk(MYSQL_RES* result, size_t irow=0) const;
   objectId_t extractObject(MYSQL_RES* result, size_t irow=0) const;
 
-private:
+protected:
   MYSQL *mysqlDB;
   std::string dbname;
   std::string table;

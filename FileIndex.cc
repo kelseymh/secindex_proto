@@ -3,6 +3,7 @@
 //
 // 20151023  Michael Kelsey
 // 20160217  Support sparse (but evenly spaced) index values
+// 20160224  Move destructor action to cleanup() function
 
 #define _FILE_OFFSET_BITS 64	/* Enables large-file support */
 #define _LARGEFILE64_SOURCE
@@ -16,6 +17,16 @@
 #if __APPLE__ && __MACH__
 typedef off_t off64_t;
 #endif
+
+
+// Close and delete file from filesystem
+
+void FileIndex::cleanup() {
+  if (afile) fclose(afile);
+  afile = 0;
+
+  unlink(fname);
+}
 
 
 // Create gigantic flat file full of index entries, then re-open for reading
@@ -44,12 +55,4 @@ chunkId_t FileIndex::value(objectId_t index) {
   static chunkId_t val;	   		// Avoid allocation overhead
   fread(&val, sizeof(chunkId_t), 1, afile);
   return val;
-}
-
-
-// Close and delete file from filesystem
-
-void FileIndex::close() {
-  if (afile) fclose(afile);
-  unlink(fname);
 }

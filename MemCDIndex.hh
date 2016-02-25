@@ -4,6 +4,7 @@
 // MemCDIndex.hh -- Exercise performance of memcached interface as lookup table.
 //
 // 20151023  Michael Kelsey
+// 20160224  Move destructor action to cleanup() function
 
 #include "IndexTester.hh"
 #include <sys/types.h>
@@ -14,11 +15,12 @@ class memcached_st;
 class MemCDIndex : public IndexTester {
 public:
   MemCDIndex(int verbose=0);
-  virtual ~MemCDIndex();
+  virtual ~MemCDIndex() { cleanup(); }
 
 protected:
   virtual void create(objectId_t asize);
   virtual chunkId_t value(objectId_t index);
+  virtual void cleanup();
 
   bool launchServer(objectId_t asize);
   bool launchClient(objectId_t asize);

@@ -106,4 +106,6 @@ void IndexTester::TestAndReport(objectId_t asize, long ntrials,
       << ", " << usage.elapsed() << ", " << usage.maxMemory()/1e6 << ", "
       << usage.pageFaults() << ", " << usage.ioInput()
       << std::endl;
+
+  cleanup();			// Remove job-specific data before next pass
 }

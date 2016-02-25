@@ -6,6 +6,7 @@
 //
 // 20151103  Michael Kelsey
 // 20151113  Add buffer for local hostname, used in configuring XRootD
+// 20160224  Move destructor action to cleanup() function
 
 #include "IndexTester.hh"
 #include <sys/types.h>
@@ -19,6 +20,7 @@ public:
 
 protected:
   virtual void create(objectId_t asize);
+  virtual void cleanup();
   virtual chunkId_t value(objectId_t index);
 
   bool createTempFiles(size_t nfiles);
